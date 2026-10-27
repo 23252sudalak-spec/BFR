@@ -1,4 +1,4 @@
-export type Language = 'th' | 'zh' | 'my';
+export type Language = 'th' | 'zh' | 'en' | 'my';
 
 export type UserRole = 'requester' | 'approver' | 'safety_officer' | 'admin' | 'worker';
 

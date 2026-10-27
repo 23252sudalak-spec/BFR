@@ -174,9 +174,9 @@ export default function App() {
           </div>
           <div>
             <a href="/" className="text-base font-bold tracking-tight text-slate-100 hover:text-white transition-colors">
-              Digital Work Permit (e-PTW)
+              {t.appName}
             </a>
-            <span className="hidden lg:inline text-xs text-slate-500 ml-2 font-mono">ISO 45001 Enterprise</span>
+            <span className="hidden lg:inline text-xs text-slate-500 ml-2 font-mono">{t.nav.isoStandard}</span>
           </div>
         </div>
 
@@ -219,7 +219,7 @@ export default function App() {
 
         {/* Zone 3: Actions (Language Selector, Persona, and Primary CTA) */}
         <div className="flex items-center gap-2.5 shrink-0">
-          {/* Multi-language Selector */}
+          {/* Multi-language Selector (TH, 中文, EN, MY) */}
           <div className="flex items-center bg-slate-950 border border-slate-800 rounded-lg p-0.5 text-xs font-medium">
             <button
               onClick={() => setLanguage('th')}
@@ -240,13 +240,22 @@ export default function App() {
               🇨🇳 中文
             </button>
             <button
+              onClick={() => setLanguage('en')}
+              className={`px-2 py-1 rounded transition-colors cursor-pointer ${
+                language === 'en' ? 'bg-sky-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="English"
+            >
+              🇬🇧 EN
+            </button>
+            <button
               onClick={() => setLanguage('my')}
               className={`px-2 py-1 rounded transition-colors cursor-pointer ${
                 language === 'my' ? 'bg-sky-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
               title="မြန်မာ"
             >
-              🇲🇲 မြန်မာ
+              🇲🇲 MY
             </button>
           </div>
 
@@ -325,13 +334,13 @@ export default function App() {
             <div className="flex items-center justify-between pb-2">
               <div>
                 <h1 className="text-lg font-bold text-slate-100">{t.report.title}</h1>
-                <p className="text-xs text-slate-400">สถิติความปลอดภัยและการวิเคราะห์ความเสี่ยงประจำเดือน</p>
+                <p className="text-xs text-slate-400">{t.report.monthlySummary}</p>
               </div>
               <button
                 onClick={() => setActiveView('dashboard')}
                 className="px-3.5 py-1.5 text-xs text-slate-300 hover:text-slate-100 bg-slate-900 border border-slate-800 rounded-lg transition-colors cursor-pointer"
               >
-                ← กลับสู่แดชบอร์ด
+                ← {t.nav.dashboard}
               </button>
             </div>
             <MonthlySafetyReport 
@@ -359,13 +368,13 @@ export default function App() {
                   <div className="flex items-center gap-2 text-xs font-medium text-amber-400">
                     <span className="uppercase tracking-wider font-semibold">{t.appName}</span>
                     <span>·</span>
-                    <span className="text-slate-400">Paperless EHS Standard</span>
+                    <span className="text-slate-400">{t.dashboard.heroSubtitle}</span>
                   </div>
                   <h1 className="text-xl sm:text-2xl font-extrabold text-slate-100 tracking-tight text-balance">
                     {t.tagline}
                   </h1>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    ควบคุมและอนุมัติงานความเสี่ยงสูง 8 ประเภท (งานร้อน, งานที่สูง, งานอับอากาศ, งานไฟฟ้า, งานเคมี, งานขุด, งานยก, งานซ่อมบำรุง) ด้วยระบบอนุมัติและลายเซ็นดิจิทัลพร้อมบันทึกถาวรบน Google Drive
+                    {t.dashboard.heroDesc}
                   </p>
                 </div>
 
@@ -379,9 +388,9 @@ export default function App() {
                       {t.zeroAccidentDays}
                     </span>
                     <div className="text-2xl font-extrabold text-slate-100 font-mono tabular-nums">
-                      142 <span className="text-sm font-normal text-slate-400">วัน</span>
+                      142 <span className="text-sm font-normal text-slate-400">{t.dashboard.daysUnit}</span>
                     </div>
-                    <span className="text-[10px] text-slate-500">Zero Lost-Time Injury (LTI)</span>
+                    <span className="text-[10px] text-slate-500">{t.dashboard.zeroLti}</span>
                   </div>
                 </div>
               </div>
@@ -392,36 +401,36 @@ export default function App() {
                   onClick={() => setSelectedStatusFilter('active')}
                   className="p-4 text-left hover:bg-slate-900/60 transition-colors cursor-pointer"
                 >
-                  <span className="text-slate-400">งานกำลังดำเนินการ (Active)</span>
+                  <span className="text-slate-400">{t.status.active}</span>
                   <div className="text-xl font-bold text-emerald-400 font-mono mt-0.5 tabular-nums">{activeCount}</div>
-                  <span className="text-[10px] text-slate-500">มี จป. สุ่มตรวจ</span>
+                  <span className="text-[10px] text-slate-500">{t.dashboard.activeDesc}</span>
                 </button>
 
                 <button
                   onClick={() => setSelectedStatusFilter('pending')}
                   className="p-4 text-left hover:bg-slate-900/60 transition-colors cursor-pointer"
                 >
-                  <span className="text-slate-400">รอตรวจสอบ (Pending)</span>
+                  <span className="text-slate-400">{t.status.pending}</span>
                   <div className="text-xl font-bold text-amber-400 font-mono mt-0.5 tabular-nums">{pendingCount}</div>
-                  <span className="text-[10px] text-slate-500">รอ จป. / เจ้าของพื้นที่</span>
+                  <span className="text-[10px] text-slate-500">{t.dashboard.pendingDesc}</span>
                 </button>
 
                 <button
                   onClick={() => setSelectedStatusFilter('approved')}
                   className="p-4 text-left hover:bg-slate-900/60 transition-colors cursor-pointer"
                 >
-                  <span className="text-slate-400">อนุมัติแล้ว (Ready)</span>
+                  <span className="text-slate-400">{t.status.approved}</span>
                   <div className="text-xl font-bold text-sky-400 font-mono mt-0.5 tabular-nums">{approvedCount}</div>
-                  <span className="text-[10px] text-slate-500">พร้อมเริ่มงาน</span>
+                  <span className="text-[10px] text-slate-500">{t.dashboard.approvedDesc}</span>
                 </button>
 
                 <button
                   onClick={() => setSelectedStatusFilter('closed')}
                   className="p-4 text-left hover:bg-slate-900/60 transition-colors cursor-pointer"
                 >
-                  <span className="text-slate-400">ปิดงานเรียบร้อย (Closed)</span>
+                  <span className="text-slate-400">{t.status.closed}</span>
                   <div className="text-xl font-bold text-slate-300 font-mono mt-0.5 tabular-nums">{closedCount}</div>
-                  <span className="text-[10px] text-slate-500">เคลียร์พื้นที่ 5S 100%</span>
+                  <span className="text-[10px] text-slate-500">{t.dashboard.closedDesc}</span>
                 </button>
               </div>
             </div>
@@ -431,9 +440,9 @@ export default function App() {
               <div className="flex items-start gap-3">
                 <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
                 <div className="space-y-0.5">
-                  <span className="font-bold text-amber-300">Safety Alert ประจำวัน (26 ต.ค. 2569):</span>
+                  <span className="font-bold text-amber-300">{t.dashboard.dailyAlertTitle}:</span>
                   <p className="text-slate-300">
-                    เตือนภัยงานร้อนและงานอับอากาศ: บังคับตรวจวัดก๊าซ 4 ชนิด (O2 ระหว่าง 19.5-23.5%, LEL &lt; 10%) และมีผู้เฝ้าระวังไฟ (Fire Watch) ประจำจุดตลอดเวลาการทำงาน
+                    {t.dashboard.dailyAlertDesc}
                   </p>
                 </div>
               </div>
@@ -441,7 +450,7 @@ export default function App() {
                 onClick={() => setIsNotifyDrawerOpen(true)}
                 className="text-xs text-amber-400 hover:text-amber-300 font-semibold whitespace-nowrap shrink-0 hover:underline cursor-pointer"
               >
-                ดูแจ้งเตือน LINE/WeChat →
+                {t.dashboard.viewAlerts}
               </button>
             </div>
 
@@ -449,13 +458,13 @@ export default function App() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                  คัดกรองตามประเภทงานความเสี่ยง (8 High-Risk Categories)
+                  {t.dashboard.filterByRisk}
                 </span>
                 <button
                   onClick={() => setSelectedTypeFilter('all')}
                   className={`text-xs ${selectedTypeFilter === 'all' ? 'text-sky-400 font-bold' : 'text-slate-500 hover:text-slate-300'} cursor-pointer`}
                 >
-                  แสดงทั้งหมด ({permits.length})
+                  {t.dashboard.showAll} ({permits.length})
                 </button>
               </div>
 
@@ -508,7 +517,7 @@ export default function App() {
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="ค้นหาเลขที่ใบงาน, ชื่องาน, ผู้รับเหมา, โซน..."
+                  placeholder={t.dashboard.searchPlaceholder}
                   className="w-full pl-9 pr-3.5 py-2 bg-slate-950 border border-slate-700/80 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
                 />
               </div>
@@ -518,7 +527,7 @@ export default function App() {
                 {(['all', 'active', 'pending', 'approved', 'closed'] as const).map(statusKey => {
                   const isActive = selectedStatusFilter === statusKey;
                   const label = statusKey === 'all' 
-                    ? 'ทั้งหมด' 
+                    ? t.dashboard.statusFilterAll 
                     : t.status[statusKey as PermitStatus];
 
                   return (
@@ -544,14 +553,14 @@ export default function App() {
                 <table className="w-full text-left text-xs">
                   <thead className="bg-slate-950/80 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold text-[11px]">
                     <tr>
-                      <th className="px-4 py-3.5">เลขที่ใบงาน (Permit No.)</th>
-                      <th className="px-4 py-3.5">ประเภทความเสี่ยง</th>
-                      <th className="px-4 py-3.5">ชื่องาน & โซนโรงงาน</th>
-                      <th className="px-4 py-3.5">ผู้รับเหมา / ผู้ขอ</th>
-                      <th className="px-4 py-3.5">วัน-เวลา</th>
-                      <th className="px-4 py-3.5">สถานะ</th>
-                      <th className="px-4 py-3.5">ลายเซ็น</th>
-                      <th className="px-4 py-3.5 text-right">ดำเนินการ</th>
+                      <th className="px-4 py-3.5">{t.dashboard.tablePermitNo}</th>
+                      <th className="px-4 py-3.5">{t.dashboard.tableRiskType}</th>
+                      <th className="px-4 py-3.5">{t.dashboard.tableTitleZone}</th>
+                      <th className="px-4 py-3.5">{t.dashboard.tableContractor}</th>
+                      <th className="px-4 py-3.5">{t.dashboard.tableSchedule}</th>
+                      <th className="px-4 py-3.5">{t.dashboard.tableStatus}</th>
+                      <th className="px-4 py-3.5">{t.dashboard.tableSignatures}</th>
+                      <th className="px-4 py-3.5 text-right">{t.dashboard.tableActions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800/80">
@@ -562,16 +571,16 @@ export default function App() {
                             <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-500 mb-1">
                               <ShieldCheck className="w-6 h-6" />
                             </div>
-                            <span className="font-semibold text-slate-200 text-sm">ยังไม่มีข้อมูลใบขออนุญาตทำงานในระบบ</span>
+                            <span className="font-semibold text-slate-200 text-sm">{t.dashboard.emptyTitle}</span>
                             <p className="text-xs text-slate-500">
-                              ระบบล้างข้อมูลเรียบร้อยแล้ว เริ่มต้นสร้างใบขออนุญาตทำงานความเสี่ยง (e-PTW) ใบแรกได้ทันที
+                              {t.dashboard.emptyDesc}
                             </p>
                             <button
                               onClick={() => setIsFormModalOpen(true)}
                               className="mt-2 flex items-center gap-1.5 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg text-xs font-bold transition-all shadow-md shadow-amber-500/20 cursor-pointer"
                             >
                               <Plus className="w-4 h-4 stroke-[3]" />
-                              <span>{t.nav.newPermit}</span>
+                              <span>{t.dashboard.btnCreateFirst}</span>
                             </button>
                           </div>
                         </td>
@@ -624,7 +633,7 @@ export default function App() {
                             <td className="px-4 py-3.5 whitespace-nowrap">
                               <span className={`px-2.5 py-1 rounded-full font-semibold border text-[11px] ${
                                 permit.status === 'active' 
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                                   : permit.status === 'approved'
                                   ? 'bg-sky-500/10 text-sky-400 border-sky-500/30'
                                   : permit.status === 'pending'
@@ -640,7 +649,7 @@ export default function App() {
                             {/* Signatures */}
                             <td className="px-4 py-3.5 whitespace-nowrap font-mono text-[11px] text-slate-400">
                               <span className="text-sky-400 font-bold">{sigCount}</span>
-                              <span className="text-slate-600">/3 สัญญาณ</span>
+                              <span className="text-slate-600">/3</span>
                             </td>
 
                             {/* Actions */}
@@ -650,7 +659,7 @@ export default function App() {
                                 className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold cursor-pointer transition-colors inline-flex items-center gap-1.5"
                               >
                                 <Eye className="w-3.5 h-3.5 text-sky-400" />
-                                <span>ตรวจสอบ / ดำเนินการ</span>
+                                <span>{t.dashboard.btnInspect}</span>
                               </button>
                             </td>
                           </tr>
@@ -668,15 +677,15 @@ export default function App() {
       {/* FOOTER */}
       <footer className="border-t border-slate-800 py-6 px-4 sm:px-8 bg-slate-950 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <span>© 2026 Apex Industrial Safety Solutions. ISO 45001 & OHSAS 18001 Compliant.</span>
+          <span>{t.dashboard.footerIso}</span>
         </div>
         <div className="flex items-center gap-4 text-slate-400">
           <span className="flex items-center gap-1">
             <Cloud className="w-3.5 h-3.5 text-sky-400" />
-            <span>Google Drive Vault Active</span>
+            <span>{t.dashboard.footerDrive}</span>
           </span>
           <span>·</span>
-          <span>e-PTW Paperless System</span>
+          <span>{t.dashboard.footerPaperless}</span>
         </div>
       </footer>
 

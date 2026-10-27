@@ -239,7 +239,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
         {/* Status & Quick Action Banner */}
         <div className="px-6 py-3 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
-            <span className="text-slate-400">สถานะปัจจุบัน:</span>
+            <span className="text-slate-400">{t.detail.currentStatus}:</span>
             <span className={`px-2.5 py-1 rounded-full font-semibold border ${
               permit.status === 'active' 
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
@@ -254,7 +254,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               {t.status[permit.status]}
             </span>
 
-            <span className="text-slate-400">ระดับความเสี่ยง:</span>
+            <span className="text-slate-400">{t.detail.riskLevel}:</span>
             <span className={`px-2 py-0.5 rounded font-mono uppercase font-bold text-[11px] ${
               permit.riskLevel === 'critical' ? 'bg-rose-950 text-rose-400 border border-rose-800' : 'bg-amber-950 text-amber-400 border border-amber-800'
             }`}>
@@ -268,7 +268,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                 onClick={handleStartWork}
                 className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer shadow-sm"
               >
-                เริ่มปฏิบัติงาน (Start Work)
+                {t.detail.btnStartWork}
               </button>
             )}
 
@@ -278,7 +278,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                   onClick={handleSuspendWork}
                   className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 font-semibold rounded-lg transition-colors cursor-pointer"
                 >
-                  {t.workflow.suspendWork}
+                  {t.detail.btnSuspendWork}
                 </button>
                 <button
                   onClick={() => setActiveTab('closure')}
@@ -294,7 +294,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                 onClick={handleResumeWork}
                 className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer"
               >
-                {t.workflow.resumeWork}
+                {t.detail.btnResumeWork}
               </button>
             )}
 
@@ -306,7 +306,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                     className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
                   >
                     <ShieldCheck className="w-4 h-4" />
-                    <span>จป. อนุมัติ (Safety Sign)</span>
+                    <span>{t.detail.btnSoApprove}</span>
                   </button>
                 )}
 
@@ -316,7 +316,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                     className="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
                   >
                     <Check className="w-4 h-4" />
-                    <span>เจ้าของพื้นที่อนุมัติ</span>
+                    <span>{t.detail.btnOwnerApprove}</span>
                   </button>
                 )}
 
@@ -324,7 +324,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                   onClick={() => setShowRejectBox(true)}
                   className="px-2.5 py-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
                 >
-                  {t.workflow.rejectPermit}
+                  {t.detail.btnReject}
                 </button>
               </>
             )}
@@ -339,7 +339,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               activeTab === 'details' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            ภาพรวม & ลายเซ็น
+            {t.detail.tabOverview}
           </button>
           <button
             onClick={() => setActiveTab('checklist')}
@@ -347,7 +347,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               activeTab === 'checklist' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Checklist & PPE ({permit.checklist.filter(c => c.checked).length}/{permit.checklist.length})
+            {t.detail.tabChecklist} ({permit.checklist.filter(c => c.checked).length}/{permit.checklist.length})
           </button>
           <button
             onClick={() => setActiveTab('jsa')}
@@ -355,7 +355,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               activeTab === 'jsa' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            JSA & รายชื่อคนงาน ({permit.workers.length} คน)
+            {t.detail.tabJsa} ({permit.workers.length})
           </button>
           <button
             onClick={() => setActiveTab('audits')}
@@ -363,7 +363,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               activeTab === 'audits' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            บันทึกสุ่มตรวจหน้างาน ({permit.safetyAudits.length})
+            {t.detail.tabAudits} ({permit.safetyAudits.length})
           </button>
           <button
             onClick={() => setActiveTab('closure')}
@@ -371,7 +371,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               activeTab === 'closure' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            ตรวจปิดงาน (Closure)
+            {t.detail.tabClosure}
           </button>
         </div>
 
@@ -404,44 +404,44 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               {/* 2-column info grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">ข้อมูลการปฏิบัติงาน</span>
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{t.form.workDetails}</span>
                   <div className="space-y-1.5 pt-1">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">ชื่องาน:</span>
+                      <span className="text-slate-500">{t.form.workDetails}:</span>
                       <span className="font-semibold text-slate-200 text-right">{permit.title}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">โซนโรงงาน:</span>
+                      <span className="text-slate-500">{t.form.facilityZone}:</span>
                       <span className="text-slate-200 text-right">{permit.facilityZone}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">ตำแหน่งจุดงาน:</span>
+                      <span className="text-slate-500">{t.form.location}:</span>
                       <span className="text-slate-200 text-right">{permit.location}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">ผู้รับเหมา:</span>
+                      <span className="text-slate-500">{t.form.contractorCompany}:</span>
                       <span className="text-slate-200 text-right">{permit.contractorCompany}</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-2">
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">วันและเวลาที่อนุญาต</span>
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{t.form.validityPeriod}</span>
                   <div className="space-y-1.5 pt-1">
                     <div className="flex justify-between">
-                      <span className="text-slate-500">วันที่เริ่มต้น:</span>
+                      <span className="text-slate-500">{t.form.startTime}:</span>
                       <span className="font-mono text-slate-200">{permit.startDate} {permit.startTime}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">วันที่สิ้นสุด:</span>
+                      <span className="text-slate-500">{t.form.endTime}:</span>
                       <span className="font-mono text-slate-200">{permit.endDate} {permit.endTime}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">ยื่นคำขอเมื่อ:</span>
+                      <span className="text-slate-500">Created:</span>
                       <span className="font-mono text-slate-200">{permit.createdAt}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-slate-500">Google Drive Sync:</span>
+                      <span className="text-slate-500">Google Drive:</span>
                       <span className="font-mono text-emerald-400 flex items-center gap-1">
                         <Cloud className="w-3.5 h-3.5" /> Synced ({permit.driveFileId})
                       </span>
@@ -454,9 +454,9 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               {permit.gasTestResults && (
                 <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-slate-200">ผลการตรวจวัดก๊าซในบรรยากาศ (Gas Test Calibration Results)</span>
+                    <span className="font-semibold text-slate-200">{t.detail.gasTestTitle}</span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                      ตรวจวัดแล้ว ปลอดภัย 100%
+                      {t.detail.gasTestSafe}
                     </span>
                   </div>
 
@@ -464,22 +464,22 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                     <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
                       <span className="text-[10px] text-slate-400">Oxygen (O2)</span>
                       <div className="text-base font-bold text-sky-400 font-mono">{permit.gasTestResults.o2}%</div>
-                      <span className="text-[9px] text-slate-500">เกณฑ์: 19.5 - 23.5%</span>
+                      <span className="text-[9px] text-slate-500">19.5 - 23.5%</span>
                     </div>
                     <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
                       <span className="text-[10px] text-slate-400">Flammable (LEL)</span>
                       <div className="text-base font-bold text-emerald-400 font-mono">{permit.gasTestResults.lel}%</div>
-                      <span className="text-[9px] text-slate-500">เกณฑ์: &lt; 10%</span>
+                      <span className="text-[9px] text-slate-500">&lt; 10%</span>
                     </div>
                     <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
                       <span className="text-[10px] text-slate-400">Carbon Monoxide (CO)</span>
                       <div className="text-base font-bold text-emerald-400 font-mono">{permit.gasTestResults.co} ppm</div>
-                      <span className="text-[9px] text-slate-500">เกณฑ์: &lt; 25 ppm</span>
+                      <span className="text-[9px] text-slate-500">&lt; 25 ppm</span>
                     </div>
                     <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
                       <span className="text-[10px] text-slate-400">Hydrogen Sulfide (H2S)</span>
                       <div className="text-base font-bold text-emerald-400 font-mono">{permit.gasTestResults.h2s} ppm</div>
-                      <span className="text-[9px] text-slate-500">เกณฑ์: &lt; 10 ppm</span>
+                      <span className="text-[9px] text-slate-500">&lt; 10 ppm</span>
                     </div>
                   </div>
                 </div>
@@ -487,13 +487,13 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
 
               {/* Digital Signatures Matrix */}
               <div className="space-y-3">
-                <span className="text-xs font-semibold text-slate-300">ลายเซ็นดิจิทัลรับรองตามลำดับชั้น (Chain of Approval Signatures)</span>
+                <span className="text-xs font-semibold text-slate-300">{t.detail.sigMatrixTitle}</span>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {/* Requester */}
                   <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 flex flex-col justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">1. ผู้ขออนุญาต / ผู้รับเหมา</span>
-                      <div className="font-semibold text-slate-200 mt-0.5">{permit.signatures.requester?.signerName || permit.requester?.name || 'ผู้ขออนุญาต'}</div>
+                      <span className="text-[10px] text-slate-400 uppercase font-semibold">1. {t.detail.roleRequester}</span>
+                      <div className="font-semibold text-slate-200 mt-0.5">{permit.signatures.requester?.signerName || permit.requester?.name || 'Applicant'}</div>
                       <span className="text-[10px] text-slate-500">{permit.contractorCompany}</span>
                     </div>
                     {permit.signatures.requester ? (
@@ -507,7 +507,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                       </div>
                     ) : (
                       <div className="h-10 flex items-center justify-center text-[11px] text-slate-600 border border-dashed border-slate-800 rounded">
-                        ยังไม่ลงนาม
+                        {t.detail.sigNotSigned}
                       </div>
                     )}
                   </div>
@@ -515,9 +515,9 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                   {/* Safety Officer */}
                   <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 flex flex-col justify-between">
                     <div>
-                      <span className="text-[10px] text-emerald-400 uppercase font-semibold">2. จป.วิชาชีพ ตรวจสอบ</span>
+                      <span className="text-[10px] text-emerald-400 uppercase font-semibold">2. {t.detail.roleSafetyOfficer}</span>
                       <div className="font-semibold text-slate-200 mt-0.5">
-                        {permit.signatures.safetyOfficer?.signerName || (canVerifyAsSO ? 'รอ จป.วิชาชีพ ลงนาม' : 'ยังไม่ลงนาม')}
+                        {permit.signatures.safetyOfficer?.signerName || (canVerifyAsSO ? `待 ${t.detail.roleSafetyOfficer}` : t.detail.sigNotSigned)}
                       </div>
                       <span className="text-[10px] text-slate-500">Apex Safety Division</span>
                     </div>
@@ -537,11 +537,11 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                             onClick={() => setSignatureRole('safetyOfficer')}
                             className="w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded font-semibold text-xs transition-colors cursor-pointer"
                           >
-                            เซ็นชื่ออนุมัติทันที
+                            {t.detail.btnSignNow}
                           </button>
                         ) : (
                           <div className="h-10 flex items-center justify-center text-[11px] text-slate-600 border border-dashed border-slate-800 rounded">
-                            รอ จป. ตรวจสอบ
+                            {t.detail.sigNotSigned}
                           </div>
                         )}
                       </div>
@@ -551,9 +551,9 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                   {/* Area Owner */}
                   <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 flex flex-col justify-between">
                     <div>
-                      <span className="text-[10px] text-sky-400 uppercase font-semibold">3. เจ้าของพื้นที่อนุมัติ (Area Owner)</span>
+                      <span className="text-[10px] text-sky-400 uppercase font-semibold">3. {t.detail.roleAreaOwner}</span>
                       <div className="font-semibold text-slate-200 mt-0.5">
-                        {permit.signatures.approver?.signerName || (canApproveAsOwner ? 'รอผู้อนุมัติลงนาม' : 'ยังไม่ลงนาม')}
+                        {permit.signatures.approver?.signerName || (canApproveAsOwner ? `待 ${t.detail.roleAreaOwner}` : t.detail.sigNotSigned)}
                       </div>
                       <span className="text-[10px] text-slate-500">Plant Operations Dept.</span>
                     </div>
@@ -573,11 +573,11 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                             onClick={() => setSignatureRole('approver')}
                             className="w-full py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded font-semibold text-xs transition-colors cursor-pointer"
                           >
-                            เซ็นชื่ออนุมัติทันที
+                            {t.detail.btnSignNow}
                           </button>
                         ) : (
                           <div className="h-10 flex items-center justify-center text-[11px] text-slate-600 border border-dashed border-slate-800 rounded">
-                            รอผู้อนุมัติ
+                            {t.detail.sigNotSigned}
                           </div>
                         )}
                       </div>
@@ -644,9 +644,9 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-slate-300">
-                    รายชื่อผู้ปฏิบัติงานในพื้นที่ ({permit.workers.length} คน)
+                    {t.detail.workersTitle} ({permit.workers.length})
                   </span>
-                  <span className="text-[11px] text-slate-400">ต้องผ่านการอบรมและรับทราบ Toolbox Talk</span>
+                  <span className="text-[11px] text-slate-400">{t.form.workerCertCheck}</span>
                 </div>
 
                 <div className="space-y-2">
@@ -664,14 +664,14 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                         {w.acknowledged ? (
                           <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Toolbox Signed ({w.acknowledgedAt?.split(' ')[1] || '08:20'})</span>
+                            <span>{t.detail.toolboxSigned} ({w.acknowledgedAt?.split(' ')[1] || '08:20'})</span>
                           </div>
                         ) : (
                           <button
                             onClick={() => handleWorkerAcknowledge(w.id)}
                             className="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded text-xs transition-colors cursor-pointer"
                           >
-                            เซ็นรับทราบอันตราย
+                            {t.detail.btnSignToolbox}
                           </button>
                         )}
                       </div>
@@ -684,7 +684,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-slate-300">
-                    ขั้นตอนงานและมาตรการควบคุมความปลอดภัย (JSA)
+                    {t.form.jsaTitle}
                   </span>
                   {permit.jsaDocumentName && (
                     <span className="text-[11px] text-emerald-400 font-mono flex items-center gap-1">
@@ -696,14 +696,14 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                 <div className="space-y-2">
                   {permit.jsaItems.map((jsa, i) => (
                     <div key={jsa.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-1">
-                      <div className="font-semibold text-sky-400">ขั้นตอนที่ {i + 1}: {jsa.step}</div>
+                      <div className="font-semibold text-sky-400">{t.form.addStep} {i + 1}: {jsa.step}</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300 pt-1">
                         <div>
-                          <span className="text-slate-500 font-medium">อันตราย: </span>
+                          <span className="text-slate-500 font-medium">{t.form.hazard}: </span>
                           <span>{jsa.hazard}</span>
                         </div>
                         <div>
-                          <span className="text-emerald-400 font-medium">มาตรการควบคุม: </span>
+                          <span className="text-emerald-400 font-medium">{t.form.controlMeasure}: </span>
                           <span>{jsa.controlMeasure}</span>
                         </div>
                       </div>
@@ -719,8 +719,8 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="font-semibold text-slate-300">ประวัติการสุ่มตรวจความปลอดภัยหน้างาน (Safety Patrol Logs)</span>
-                  <p className="text-[11px] text-slate-400">จป.วิชาชีพ และผู้บริหารสามารถเข้าสุ่มตรวจระหว่างทำงานได้ตลอดเวลา</p>
+                  <span className="font-semibold text-slate-300">{t.detail.tabAudits}</span>
+                  <p className="text-[11px] text-slate-400">ISO 45001 Patrol & Compliance Logs</p>
                 </div>
 
                 {(canVerifyAsSO || currentUser.role === 'admin') && permit.status === 'active' && (
@@ -729,14 +729,14 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer"
                   >
                     <ShieldCheck className="w-4 h-4" />
-                    <span>+ บันทึกสุ่มตรวจหน้างาน</span>
+                    <span>{t.detail.btnNewAudit}</span>
                   </button>
                 )}
               </div>
 
               {permit.safetyAudits.length === 0 ? (
                 <div className="p-6 text-center text-slate-500 border border-dashed border-slate-800 rounded-xl">
-                  ยังไม่มีประวัติการสุ่มตรวจหน้างานสำหรับใบงานนี้
+                  {t.detail.noAudits}
                 </div>
               ) : (
                 <div className="space-y-2.5">
@@ -747,7 +747,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             aud.pass ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                           }`}>
-                            {aud.pass ? 'PASSED 100%' : 'VIOLATION DETECTED'}
+                            {aud.pass ? t.detail.auditPassBadge : t.detail.auditFailBadge}
                           </span>
                           <span className="font-semibold text-slate-200">{aud.auditor}</span>
                         </div>
@@ -769,19 +769,19 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-8 h-8 text-emerald-400" />
                     <div>
-                      <h3 className="text-base font-bold text-slate-100">ใบอนุญาตนี้ปิดงานสมบูรณ์แล้ว (Permit Closed)</h3>
-                      <p className="text-xs text-slate-400">ปิดงานเมื่อ: {permit.signatures.closureInspector?.timestamp || permit.updatedAt}</p>
+                      <h3 className="text-base font-bold text-slate-100">{t.detail.closureSuccessTitle}</h3>
+                      <p className="text-xs text-slate-400">{permit.signatures.closureInspector?.timestamp || permit.updatedAt}</p>
                     </div>
                   </div>
 
                   <div className="p-3 bg-slate-900 rounded-lg text-slate-300">
-                    <span className="text-slate-500">บันทึกการปิดงาน: </span>
-                    <span>{permit.closureNotes || 'ทำความสะอาดพื้นที่เรียบร้อย'}</span>
+                    <span className="text-slate-500">{t.detail.closureNotesLabel}: </span>
+                    <span>{permit.closureNotes || 'Cleaned & verified'}</span>
                   </div>
 
                   {permit.signatures.closureInspector && (
                     <div className="pt-2">
-                      <span className="text-slate-400 block mb-1">ลายเซ็นผู้ตรวจปิดงาน ({permit.signatures.closureInspector.signerName}):</span>
+                      <span className="text-slate-400 block mb-1">Inspector ({permit.signatures.closureInspector.signerName}):</span>
                       <img 
                         src={permit.signatures.closureInspector.signatureDataUrl} 
                         alt="Closure Signature" 
@@ -831,13 +831,13 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      หมายเหตุสรุปสภาพพื้นที่หลังเลิกงาน
+                      {t.detail.closureNotesLabel}
                     </label>
                     <textarea
                       rows={2}
                       value={closureNotes}
                       onChange={e => setClosureNotes(e.target.value)}
-                      placeholder="เช่น เคลียร์สายเชื่อม ดับไฟเรียบร้อย ทำความสะอาดพื้น 100%"
+                      placeholder="..."
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500"
                     />
                   </div>
@@ -862,7 +862,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                       }`}
                     >
                       <PenTool className="w-4 h-4" />
-                      <span>ลงนามตรวจพื้นที่และปิดใบงาน (Sign to Close Permit)</span>
+                      <span>{t.detail.btnSignToClose}</span>
                     </button>
                   )}
                 </div>

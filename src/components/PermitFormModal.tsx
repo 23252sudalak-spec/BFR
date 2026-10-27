@@ -369,7 +369,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     type="text"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
-                    placeholder="เช่น งานเชื่อมเปลี่ยนท่อไอน้ำแรงดันสูง หม้อต้ม B"
+                    placeholder={t.form.workDetails}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
                   />
                 </div>
@@ -382,20 +382,20 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     list="facility-zone-suggestions"
                     value={facilityZone}
                     onChange={e => setFacilityZone(e.target.value)}
-                    placeholder="กรอกโซน / อาคาร เช่น อาคารผลิต 1, โซนบอยเลอร์, อาคาร B..."
+                    placeholder={t.form.zonePlaceholder}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 text-xs"
                   />
                   <datalist id="facility-zone-suggestions">
                     <option value="อาคารผลิต 1 (Production Plant 1)" />
                     <option value="อาคารผลิต 2 (Production Plant 2)" />
-                    <option value="Zone A: ลานถังเก็บสารเคมี (Chemical Tank Farm)" />
-                    <option value="Zone B: อาคารหม้อต้มและสาธารณูปโภค (Boiler & Utilities)" />
-                    <option value="Zone C: อาคารเครื่องปฏิกรณ์ (Reactor Complex)" />
-                    <option value="Zone D: ลานเครื่องจักรกลหนัก (Machinery Yard)" />
-                    <option value="Zone E: สถานีไฟฟ้าย่อยแรงดันสูง (Main Substation)" />
-                    <option value="Zone W: คลังสินค้าและโลจิสติกส์ (Warehouse & Logistics)" />
-                    <option value="อาคารซ่อมบำรุงส่วนกลาง (Central Workshop)" />
-                    <option value="ระบบบำบัดน้ำเสียส่วนกลาง (Wastewater Treatment)" />
+                    <option value="Zone A: Chemical Tank Farm" />
+                    <option value="Zone B: Boiler & Utilities" />
+                    <option value="Zone C: Reactor Complex" />
+                    <option value="Zone D: Machinery Yard" />
+                    <option value="Zone E: Main Substation" />
+                    <option value="Zone W: Warehouse & Logistics" />
+                    <option value="Central Workshop" />
+                    <option value="Wastewater Treatment" />
                   </datalist>
                 </div>
               </div>
@@ -410,7 +410,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     type="text"
                     value={location}
                     onChange={e => setLocation(e.target.value)}
-                    placeholder="เช่น อาคารแยก B ชั้น 2 เสาแถว H-12"
+                    placeholder={t.form.location}
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
                   />
                 </div>
@@ -430,7 +430,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
               {/* Date & Time */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">วันที่เริ่มต้น</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">{t.form.validityPeriod}</label>
                   <input
                     type="date"
                     value={startDate}
@@ -439,7 +439,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">วันที่สิ้นสุด</label>
+                  <label className="block text-xs font-semibold text-slate-400 mb-1">{t.form.validityPeriod}</label>
                   <input
                     type="date"
                     value={endDate}
@@ -475,7 +475,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
               {/* PPE Selection Grid */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  {t.form.ppeRequired} (เลือกอุปกรณ์ความปลอดภัยที่จำเป็น)
+                  {t.form.ppeRequired} - {t.form.ppeSubtitle}
                 </label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                   {Object.entries(t.ppe).map(([ppeKey, ppeName]) => {
@@ -509,7 +509,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                   <label className="block text-xs font-semibold text-slate-300">
                     {t.form.safetyChecklist} - {t.permitTypes[selectedType].title}
                   </label>
-                  <span className="text-xs text-sky-400">บังคับผ่านเกณฑ์ 100% ก่อนเริ่มงาน</span>
+                  <span className="text-xs text-sky-400">{t.form.checklistMandatory}</span>
                 </div>
 
                 <div className="space-y-2 border border-slate-800 rounded-xl p-3 bg-slate-950/30">
@@ -548,13 +548,13 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
               {/* Workers Management */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  {t.form.workersTitle} (ผู้ปฏิบัติงานที่ผ่านการอบรมและตรวจสุขภาพ)
+                  {t.form.workerSectionTitle}
                 </label>
                 
                 <div className="space-y-2 mb-3">
                   {workers.length === 0 ? (
                     <div className="p-4 text-center text-slate-400 border border-dashed border-slate-800 rounded-xl bg-slate-950/40 text-xs">
-                      ยังไม่มีรายชื่อผู้ปฏิบัติงาน กรุณากรอกชื่อ-ตำแหน่งด้านล่าง แล้วกด "+ เพิ่มรายชื่อผู้ปฏิบัติงาน"
+                      {t.form.workerCertCheck}
                     </div>
                   ) : (
                     workers.map((w, index) => (
@@ -570,14 +570,14 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                         <div className="flex items-center gap-3">
                           {w.certified && (
                             <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                              ผ่านการอบรม & ตรวจสุขภาพ
+                              Certified
                             </span>
                           )}
                           <button
                             type="button"
                             onClick={() => removeWorker(w.id)}
                             className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
-                            title="ลบรายชื่อ"
+                            title="Delete"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -590,32 +590,32 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                 <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2.5">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">ชื่อ-นามสกุล ผู้ปฏิบัติงาน <span className="text-rose-400">*</span></label>
+                      <label className="block text-[11px] text-slate-400 mb-1">{t.form.workerNameLabel} <span className="text-rose-400">*</span></label>
                       <input
                         type="text"
                         value={newWorkerName}
                         onChange={e => setNewWorkerName(e.target.value)}
-                        placeholder="เช่น นายประดิษฐ์ ช่างฝีมือ"
+                        placeholder={t.form.workerName}
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">เลขประจำตัว / Passport / รหัสพนักงาน</label>
+                      <label className="block text-[11px] text-slate-400 mb-1">{t.form.workerIdLabel}</label>
                       <input
                         type="text"
                         value={newWorkerId}
                         onChange={e => setNewWorkerId(e.target.value)}
-                        placeholder="เช่น 1-1002-xxxxx หรือ ID-8821"
+                        placeholder={t.form.workerId}
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
                       />
                     </div>
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">ตำแหน่ง / หน้าที่ในงาน</label>
+                      <label className="block text-[11px] text-slate-400 mb-1">{t.form.workerRoleLabel}</label>
                       <input
                         type="text"
                         value={newWorkerRole}
                         onChange={e => setNewWorkerRole(e.target.value)}
-                        placeholder="เช่น ช่างเชื่อม, ผู้เฝ้าระวังไฟ, ช่างเทคนิค..."
+                        placeholder="Rigger, Welder, Fire Watch..."
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
                       />
                     </div>
@@ -629,7 +629,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                         onChange={e => setNewWorkerCertified(e.target.checked)}
                         className="w-4 h-4 rounded text-sky-500"
                       />
-                      <span>ผ่านการอบรมความปลอดภัย & ตรวจสุขภาพความพร้อมแล้ว (Certified & Health Checked)</span>
+                      <span>{t.form.workerCertCheck}</span>
                     </label>
 
                     <button
@@ -647,14 +647,14 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
               {/* JSA Step breakdown */}
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  {t.form.jsaTitle} (การประเมินความเสี่ยงและมาตรการป้องกันทีละขั้นตอน)
+                  {t.form.jsaTitle}
                 </label>
 
                 <div className="space-y-2 mb-3">
                   {jsaItems.map((jsa, i) => (
                     <div key={jsa.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sky-400">ขั้นตอนที่ {i + 1}: {jsa.step}</span>
+                        <span className="font-semibold text-sky-400">{t.form.addStep} {i + 1}: {jsa.step}</span>
                         {jsaItems.length > 1 && (
                           <button
                             type="button"
@@ -667,11 +667,11 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300 pt-1">
                         <div>
-                          <span className="text-slate-500 font-medium">อันตราย: </span>
+                          <span className="text-slate-500 font-medium">{t.form.hazard}: </span>
                           <span>{jsa.hazard}</span>
                         </div>
                         <div>
-                          <span className="text-emerald-400 font-medium">มาตรการควบคุม: </span>
+                          <span className="text-emerald-400 font-medium">{t.form.controlMeasure}: </span>
                           <span>{jsa.controlMeasure}</span>
                         </div>
                       </div>
@@ -684,7 +684,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     type="text"
                     value={newStep}
                     onChange={e => setNewStep(e.target.value)}
-                    placeholder="ระบุขั้นตอนการทำงาน เช่น ตัดท่อ, ยกแผง, เชื่อมประกบ"
+                    placeholder={t.form.stepWork}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500"
                   />
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -692,14 +692,14 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                       type="text"
                       value={newHazard}
                       onChange={e => setNewHazard(e.target.value)}
-                      placeholder="อันตรายที่อาจเกิดขึ้น"
+                      placeholder={t.form.hazard}
                       className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500"
                     />
                     <input
                       type="text"
                       value={newControl}
                       onChange={e => setNewControl(e.target.value)}
-                      placeholder="มาตรการควบคุมและป้องกัน"
+                      placeholder={t.form.controlMeasure}
                       className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500"
                     />
                   </div>
@@ -721,7 +721,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     </div>
                     <div>
                       <span className="text-xs font-semibold text-slate-200">{t.form.uploadJsa}</span>
-                      <p className="text-[11px] text-slate-400">รองรับ PDF, PNG, JPG (เชื่อมต่อ Google Drive Vault อัตโนมัติ)</p>
+                      <p className="text-[11px] text-slate-400">{t.form.uploadHint}</p>
                       {uploadedFileName && (
                         <span className="inline-flex items-center gap-1 mt-1 text-[11px] text-emerald-400 font-mono">
                           <FileText className="w-3 h-3" /> {uploadedFileName} (Ready)
@@ -736,7 +736,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     }}
                     className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium cursor-pointer"
                   >
-                    แนบไฟล์จำลอง
+                    {t.form.btnSimulateUpload}
                   </button>
                 </div>
               </div>
@@ -749,9 +749,9 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
               <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-semibold text-slate-200">ผู้ขออนุญาต / ผู้รับเหมา (Applicant Signature)</span>
+                    <span className="text-xs font-semibold text-slate-200">{t.detail.roleRequester} ({t.form.digitalSign})</span>
                     <p className="text-[11px] text-slate-400">
-                      ข้าพเจ้าขอรับรองว่าได้ตรวจสอบพื้นที่ และผู้ปฏิบัติงานทุกคนได้ผ่านการอบรมรับทราบอันตรายและมาตรการป้องกันเรียบร้อยแล้ว
+                      {t.form.applicantCertDeclaration}
                     </p>
                   </div>
                   <span className="text-xs font-mono text-sky-400 font-semibold">{currentUser.name}</span>
@@ -762,7 +762,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     <div className="flex items-center gap-3">
                       <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                       <div>
-                        <span className="text-xs font-semibold text-slate-200">ลงนามดิจิทัลสำเร็จแล้ว</span>
+                        <span className="text-xs font-semibold text-slate-200">{t.detail.sigSigned}</span>
                         <p className="text-[11px] text-slate-400">{currentUser.name} · {contractorCompany}</p>
                       </div>
                     </div>
@@ -771,7 +771,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                       onClick={() => setShowSignPad(true)}
                       className="text-xs text-sky-400 hover:underline"
                     >
-                      เซ็นชื่อใหม่
+                      {t.detail.btnSignNow}
                     </button>
                   </div>
                 ) : (
@@ -783,7 +783,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                         className="w-full py-4 border-2 border-dashed border-sky-500/50 hover:border-sky-500 bg-sky-500/5 hover:bg-sky-500/10 rounded-xl text-sky-400 font-semibold text-xs flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
                       >
                         <HardHat className="w-6 h-6" />
-                        <span>คลิกเพื่อเปิดกระดานลงนามดิจิทัล (Open Signature Pad)</span>
+                        <span>{t.form.digitalSign}</span>
                       </button>
                     ) : (
                       <DigitalSignaturePad
@@ -803,19 +803,19 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
 
               {/* Review Summary */}
               <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2 text-xs">
-                <span className="font-semibold text-slate-300">สรุปข้อมูลใบขออนุญาต:</span>
+                <span className="font-semibold text-slate-300">{t.form.summaryTitle}:</span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-slate-400 pt-1">
                   <div>
-                    <span className="text-slate-500">ประเภท:</span> <span className="text-slate-200">{t.permitTypes[selectedType].title}</span>
+                    <span className="text-slate-500">{t.dashboard.tableRiskType}:</span> <span className="text-slate-200">{t.permitTypes[selectedType].title}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">โซน:</span> <span className="text-slate-200">{facilityZone}</span>
+                    <span className="text-slate-500">{t.form.facilityZone}:</span> <span className="text-slate-200">{facilityZone}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">ผู้ปฏิบัติงาน:</span> <span className="text-slate-200">{workers.length} คน</span>
+                    <span className="text-slate-500">{t.form.workersTitle}:</span> <span className="text-slate-200">{workers.length}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">สถานะเริ่มต้น:</span> <span className="text-amber-400 font-medium">Pending Review</span>
+                    <span className="text-slate-500">{t.dashboard.tableStatus}:</span> <span className="text-amber-400 font-medium">Pending Review</span>
                   </div>
                 </div>
               </div>
@@ -832,7 +832,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                 onClick={() => setActiveStep(prev => prev - 1)}
                 className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-slate-100 bg-slate-800 hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
               >
-                ย้อนกลับ
+                {t.form.btnBack}
               </button>
             )}
             <button
@@ -851,7 +851,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                 onClick={() => setActiveStep(prev => prev + 1)}
                 className="px-5 py-2 text-xs font-semibold text-slate-950 bg-sky-400 hover:bg-sky-300 rounded-lg transition-colors cursor-pointer shadow-sm"
               >
-                ขั้นตอนถัดไป
+                {t.form.btnNext}
               </button>
             ) : (
               <button

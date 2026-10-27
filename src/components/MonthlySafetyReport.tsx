@@ -184,7 +184,7 @@ export const MonthlySafetyReport: React.FC<MonthlySafetyReportProps> = ({
         </div>
 
         <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
-          <span className="text-[11px] font-medium text-slate-400">ปิดงานสมบูรณ์</span>
+          <span className="text-[11px] font-medium text-slate-400">{t.status.closed}</span>
           <div className="text-2xl font-bold text-slate-300 font-mono mt-1 tabular-nums">{closedCount}</div>
           <span className="text-[10px] text-slate-500 mt-1 block">5S Clean Verified</span>
         </div>
@@ -217,7 +217,7 @@ export const MonthlySafetyReport: React.FC<MonthlySafetyReportProps> = ({
               <TrendingUp className="w-4 h-4 text-sky-400" />
               <span>{t.report.riskDistribution} (8 Risk Types)</span>
             </h3>
-            <span className="text-xs text-slate-500">สถิติสะสม</span>
+            <span className="text-xs text-slate-500">Analytics</span>
           </div>
 
           <div className="space-y-3 pt-1">
@@ -229,7 +229,7 @@ export const MonthlySafetyReport: React.FC<MonthlySafetyReportProps> = ({
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-300 font-medium">{info.title}</span>
                     <div className="flex items-center gap-2 font-mono tabular-nums">
-                      <span className="text-slate-400">{count} ใบ</span>
+                      <span className="text-slate-400">{count}</span>
                       <span className="text-slate-500">({pct}%)</span>
                     </div>
                   </div>
@@ -258,7 +258,7 @@ export const MonthlySafetyReport: React.FC<MonthlySafetyReportProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               <Building className="w-4 h-4 text-emerald-400" />
-              <span>การกระจายตัวตามพื้นที่โรงงาน (Facility Zones)</span>
+              <span>{t.form.facilityZone} (Facility Zones)</span>
             </h3>
             <span className="text-xs text-slate-500">Active Work Zones</span>
           </div>
@@ -266,14 +266,14 @@ export const MonthlySafetyReport: React.FC<MonthlySafetyReportProps> = ({
           <div className="space-y-2.5 pt-1">
             {Object.entries(zoneCounts).length === 0 ? (
               <div className="p-6 text-center text-slate-500 border border-dashed border-slate-800 rounded-xl text-xs">
-                ยังไม่มีข้อมูลใบงานในรอบเดือนที่เลือก
+                {t.dashboard.emptyTitle}
               </div>
             ) : (
               Object.entries(zoneCounts).map(([zoneName, count]) => (
                 <div key={zoneName} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-200">{zoneName}</span>
                   <div className="flex items-center gap-3">
-                    <span className="text-sky-400 font-mono font-bold tabular-nums">{count} ใบอนุญาต</span>
+                    <span className="text-sky-400 font-mono font-bold tabular-nums">{count}</span>
                     <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
                       100% Safe
                     </span>

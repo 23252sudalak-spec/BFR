@@ -71,7 +71,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               activeTab === 'logs' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            ประวัติการแจ้งเตือน ({notifications.length})
+            {t.nav.notifications} ({notifications.length})
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -79,7 +79,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               activeTab === 'settings' ? 'border-emerald-500 text-emerald-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            ตั้งค่า Webhook Token & ทดสอบส่ง
+            {t.notify.tokenSettings} & {t.notify.testTrigger}
           </button>
         </div>
 
@@ -89,21 +89,21 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-slate-400">
-                  ข้อความแจ้งเตือนเรียลไทม์ (Webhook Dispatch Stream)
+                  {t.nav.notifications} (Webhook Dispatch Stream)
                 </span>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={onMarkAllAsRead}
                     className="text-sky-400 hover:underline cursor-pointer"
                   >
-                    อ่านทั้งหมดแล้ว
+                    OK (All)
                   </button>
                   <span className="text-slate-600">·</span>
                   <button
                     onClick={onClearAll}
                     className="text-rose-400 hover:underline cursor-pointer"
                   >
-                    ล้างประวัติ
+                    Clear
                   </button>
                 </div>
               </div>
@@ -214,7 +214,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                   className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer flex items-center justify-center gap-2 shadow-sm"
                 >
                   <Send className="w-4 h-4" />
-                  <span>ส่งสัญญาณจำลองทันที (Send Test Webhook)</span>
+                  <span>{t.notify.testTrigger}</span>
                 </button>
               </div>
             </div>

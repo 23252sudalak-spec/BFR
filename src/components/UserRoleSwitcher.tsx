@@ -33,15 +33,15 @@ export const UserRoleSwitcher: React.FC<UserRoleSwitcherProps> = ({
   const getRoleBadge = (role: UserRole) => {
     switch (role) {
       case 'safety_officer':
-        return { label: 'Safety Officer (จป.วิชาชีพ)', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
+        return { label: `Safety Officer (${t.detail.roleSafetyOfficer})`, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' };
       case 'approver':
-        return { label: 'Area Owner / Issuer (เจ้าของพื้นที่)', color: 'text-sky-400 bg-sky-500/10 border-sky-500/30' };
+        return { label: `Area Owner / Issuer (${t.detail.roleAreaOwner})`, color: 'text-sky-400 bg-sky-500/10 border-sky-500/30' };
       case 'requester':
-        return { label: 'Requester / Contractor (ผู้รับเหมา)', color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' };
+        return { label: `Requester / Contractor (${t.detail.roleRequester})`, color: 'text-amber-400 bg-amber-500/10 border-amber-500/30' };
       case 'admin':
-        return { label: 'EHS Admin / Director (ผู้ดูแลระบบ)', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' };
+        return { label: 'EHS Admin / Director', color: 'text-purple-400 bg-purple-500/10 border-purple-500/30' };
       case 'worker':
-        return { label: 'Certified Worker (ผู้ปฏิบัติงาน)', color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30' };
+        return { label: `Certified Worker`, color: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/30' };
     }
   };
 
@@ -55,8 +55,8 @@ export const UserRoleSwitcher: React.FC<UserRoleSwitcherProps> = ({
               <UserCheck className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-100">{t.nav.switchRole}</h2>
-              <p className="text-xs text-slate-400">Multi-Channel Auth & RBAC Persona Switcher</p>
+              <h2 className="text-base font-bold text-slate-100">{t.roleSwitcher.title}</h2>
+              <p className="text-xs text-slate-400">{t.roleSwitcher.subtitle}</p>
             </div>
           </div>
 
@@ -70,7 +70,7 @@ export const UserRoleSwitcher: React.FC<UserRoleSwitcherProps> = ({
 
         {/* Channels Simulation Bar */}
         <div className="px-6 py-3 bg-slate-950/60 border-b border-slate-800 flex items-center justify-between gap-2 text-xs">
-          <span className="text-slate-400 font-medium">เข้าสู่ระบบผ่านช่องทาง:</span>
+          <span className="text-slate-400 font-medium">{t.roleSwitcher.loginVia}:</span>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setActiveChannel('line')}
@@ -118,7 +118,7 @@ export const UserRoleSwitcher: React.FC<UserRoleSwitcherProps> = ({
         {/* User Personas List */}
         <div className="p-6 overflow-y-auto space-y-3 flex-1 text-xs">
           <span className="font-semibold text-slate-300 block mb-1">
-            เลือกโปรไฟล์บทบาทเพื่อทดสอบโฟลว์งาน (Click to Switch Instantly):
+            {t.roleSwitcher.selectProfile}:
           </span>
 
           <div className="space-y-2">
@@ -156,7 +156,7 @@ export const UserRoleSwitcher: React.FC<UserRoleSwitcherProps> = ({
                       <div className="font-bold text-slate-200 flex items-center gap-2">
                         <span>{user.name}</span>
                         {isCurrent && (
-                          <span className="text-[10px] text-sky-400 font-normal">(Active Session)</span>
+                          <span className="text-[10px] text-sky-400 font-normal">({t.roleSwitcher.activeSession})</span>
                         )}
                       </div>
                       <div className="text-[11px] text-slate-400">{user.company} · {user.email}</div>
@@ -174,7 +174,7 @@ export const UserRoleSwitcher: React.FC<UserRoleSwitcherProps> = ({
                         <Check className="w-4 h-4 stroke-[3]" />
                       </div>
                     ) : (
-                      <span className="text-[11px] text-slate-500 hover:text-slate-300 font-medium">สลับเป็นบทบาทนี้ →</span>
+                      <span className="text-[11px] text-slate-500 hover:text-slate-300 font-medium">{t.roleSwitcher.switchTo} →</span>
                     )}
                   </div>
                 </div>
