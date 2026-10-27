@@ -1,0 +1,6 @@
+{
+  "name": "Digital Work Permit System (e-PTW)",
+  "description": "ระบบใบอนุญาตทำงานปลอดภัยดิจิทัล Multi-language Paperless Work Permit System with 8 High-Risk Work Types, Dynamic Checklists, Digital Signatures, and Google Drive & LINE Sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
