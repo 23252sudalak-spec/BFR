@@ -110,19 +110,26 @@ export const MonthlySafetyReport: React.FC<MonthlySafetyReportProps> = ({
       {/* Top Banner with Zero Accident Days Counter */}
       <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/30 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-            <ShieldCheck className="w-8 h-8" />
+          <div className="bg-white px-3 py-1.5 rounded-xl border border-slate-700/60 shadow-sm flex items-center shrink-0">
+            <img 
+              src="/assets/aistudio/______3d0a2b49.jpg" 
+              alt="BANFERT" 
+              className="h-7 w-auto object-contain" 
+            />
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+            <ShieldCheck className="w-7 h-7" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs uppercase font-bold tracking-wider text-emerald-400">{t.zeroAccidentBadge}</span>
               <span className="text-xs text-slate-500">·</span>
-              <span className="text-xs text-slate-400">Target: Zero Lost-Time Injury</span>
+              <span className="text-xs text-slate-400">BANFERT Plant Safety Target</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 mt-0.5 tracking-tight">
-              142 <span className="text-lg font-normal text-emerald-400">{t.zeroAccidentDays}</span>
+              72 <span className="text-lg font-normal text-emerald-400">{t.zeroAccidentDays}</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">{t.zeroAccidentSubtitle}</p>
+            <p className="text-xs text-emerald-400/90 font-medium mt-0.5">{t.zeroAccidentSubtitle}</p>
           </div>
         </div>
 

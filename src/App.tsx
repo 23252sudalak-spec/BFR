@@ -167,16 +167,26 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
       {/* 1. TOP BAR CONTRACT */}
       <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-8">
-        {/* Zone 1: Brand wordmark */}
+        {/* Zone 1: Brand wordmark & BANFERT Company Logo */}
         <div className="flex items-center gap-3 whitespace-nowrap shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm shadow-amber-500/10">
-            <ShieldCheck className="w-5 h-5" />
+          <div className="bg-white px-2.5 py-1 rounded-lg border border-slate-700/60 shadow-sm flex items-center shrink-0">
+            <img 
+              src="/assets/aistudio/______3d0a2b49.jpg" 
+              alt="BANFERT" 
+              className="h-6 w-auto object-contain" 
+            />
           </div>
-          <div>
-            <a href="/" className="text-base font-bold tracking-tight text-slate-100 hover:text-white transition-colors">
-              {t.appName}
-            </a>
-            <span className="hidden lg:inline text-xs text-slate-500 ml-2 font-mono">{t.nav.isoStandard}</span>
+          <div className="h-6 w-[1px] bg-slate-800 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm shadow-amber-500/10 shrink-0">
+              <ShieldCheck className="w-4.5 h-4.5" />
+            </div>
+            <div>
+              <a href="/" className="text-sm sm:text-base font-bold tracking-tight text-slate-100 hover:text-white transition-colors">
+                {t.appName}
+              </a>
+              <span className="hidden lg:inline text-xs text-slate-500 ml-2 font-mono">{t.nav.isoStandard}</span>
+            </div>
           </div>
         </div>
 
@@ -366,6 +376,13 @@ export default function App() {
               <div className="relative p-6 sm:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div className="space-y-2 max-w-2xl">
                   <div className="flex items-center gap-2 text-xs font-medium text-amber-400">
+                    <span className="bg-white px-2 py-0.5 rounded shadow-sm inline-flex items-center">
+                      <img 
+                        src="/assets/aistudio/______3d0a2b49.jpg" 
+                        alt="BANFERT" 
+                        className="h-3.5 w-auto object-contain" 
+                      />
+                    </span>
                     <span className="uppercase tracking-wider font-semibold">{t.appName}</span>
                     <span>·</span>
                     <span className="text-slate-400">{t.dashboard.heroSubtitle}</span>
@@ -388,9 +405,9 @@ export default function App() {
                       {t.zeroAccidentDays}
                     </span>
                     <div className="text-2xl font-extrabold text-slate-100 font-mono tabular-nums">
-                      142 <span className="text-sm font-normal text-slate-400">{t.dashboard.daysUnit}</span>
+                      72 <span className="text-sm font-normal text-slate-400">{t.dashboard.daysUnit}</span>
                     </div>
-                    <span className="text-[10px] text-slate-500">{t.dashboard.zeroLti}</span>
+                    <span className="text-[11px] text-emerald-400/90 font-medium">{t.dashboard.zeroLti}</span>
                   </div>
                 </div>
               </div>

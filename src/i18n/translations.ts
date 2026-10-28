@@ -249,7 +249,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     tagline: "ระบบควบคุมงานความเสี่ยงสูงแบบไร้กระดาษ ปลอดภัย ตรวจสอบได้แบบเรียลไทม์",
     zeroAccidentBadge: "สถิติความปลอดภัยระดับโรงงาน",
     zeroAccidentDays: "วันทำงานปลอดภัยต่อเนื่อง",
-    zeroAccidentSubtitle: "เป้าหมายอุบัติเหตุเป็นศูนย์ (Zero Accident Goal)",
+    zeroAccidentSubtitle: "นับจากอุบัติเหตุครั้งล่าสุด: 17 สิงหาคม 2026 (เป้าหมายอุบัติเหตุเป็นศูนย์)",
     
     nav: {
       dashboard: "แดชบอร์ดควบคุม",
@@ -344,7 +344,7 @@ export const translations: Record<Language, TranslationDictionary> = {
       heroSubtitle: "มาตรฐานระบบความปลอดภัยระดับสากล (Paperless EHS)",
       heroDesc: "ควบคุมและอนุมัติงานความเสี่ยงสูง 8 ประเภท (งานร้อน, งานที่สูง, งานอับอากาศ, งานไฟฟ้า, งานเคมี, งานขุด, งานยก, งานซ่อมบำรุง) ด้วยระบบอนุมัติและลายเซ็นดิจิทัลพร้อมบันทึกถาวรบน Google Drive",
       daysUnit: "วัน",
-      zeroLti: "Zero Lost-Time Injury (LTI)",
+      zeroLti: "อุบัติเหตุล่าสุด: 17 ส.ค. 2026 · Zero LTI",
       activeDesc: "มี จป. สุ่มตรวจ",
       pendingDesc: "รอ จป. / เจ้าของพื้นที่",
       approvedDesc: "พร้อมเริ่มงาน",
@@ -586,7 +586,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     tagline: "无纸化高风险作业安全许可与实时合规追踪系统",
     zeroAccidentBadge: "工厂安全里程碑",
     zeroAccidentDays: "连续安全运行天数",
-    zeroAccidentSubtitle: "零事故安全目标 (Zero Accident Target)",
+    zeroAccidentSubtitle: "自末次事故起算: 2026年8月17日 (零事故安全目标)",
 
     nav: {
       dashboard: "监控仪表板",
@@ -681,7 +681,7 @@ export const translations: Record<Language, TranslationDictionary> = {
       heroSubtitle: "国际化无纸化EHS安全管理标准",
       heroDesc: "通过数字化审批与电子签名全流程闭环控制8类高风险作业（动火、高处、受限空间、电气、危化品、动土开挖、起重吊装、常规检修），并实时同步归档至谷歌企业云盘。",
       daysUnit: "天",
-      zeroLti: "零工伤事故 (Zero Lost-Time Injury)",
+      zeroLti: "末次事故日: 2026年8月17日 · Zero LTI",
       activeDesc: "安全工程师巡检中",
       pendingDesc: "待安全员/属地审批",
       approvedDesc: "准予施工作业",
@@ -923,7 +923,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     tagline: "Paperless High-Risk Work Safety Permit & Real-time Traceability Platform",
     zeroAccidentBadge: "Facility Safety Milestone",
     zeroAccidentDays: "Safe Work Days Continuous",
-    zeroAccidentSubtitle: "Zero Lost-Time Injury (Zero Accident Target)",
+    zeroAccidentSubtitle: "Since last incident: August 17, 2026 (Zero Accident Goal)",
 
     nav: {
       dashboard: "Dashboard",
@@ -1018,7 +1018,7 @@ export const translations: Record<Language, TranslationDictionary> = {
       heroSubtitle: "Global Paperless EHS Safety Standard",
       heroDesc: "Control and approve 8 high-risk work categories (Hot Work, Height, Confined Space, Electrical, Chemical, Excavation, Lifting, Cold Work) with digital approval workflows, cryptographic signatures, and real-time cloud archiving.",
       daysUnit: "Days",
-      zeroLti: "Zero Lost-Time Injury (LTI)",
+      zeroLti: "Last incident: Aug 17, 2026 · Zero LTI",
       activeDesc: "Safety Patrol Active",
       pendingDesc: "Awaiting HSE / Area Review",
       approvedDesc: "Ready to Commence",
@@ -1260,7 +1260,7 @@ export const translations: Record<Language, TranslationDictionary> = {
     tagline: "စက္ကူမလို အန္တရာယ်ရှိလုပ်ငန်းခွင့်ပြုမိန့်နှင့် ဘေးအန္တရာယ်ကင်းရှင်းရေး စနစ်",
     zeroAccidentBadge: "စက်ရုံ ဘေးအန္တရာယ်ကင်းရှင်းရေး မှတ်တမ်း",
     zeroAccidentDays: "ဆက်တိုက် မတော်တဆမှုကင်းမဲ့သည့်ရက်ပေါင်း",
-    zeroAccidentSubtitle: "မတော်တဆမှု သုည ရည်မှန်းချက် (Zero Accident Target)",
+    zeroAccidentSubtitle: "နောက်ဆုံး မတော်တဆမှု ဖြစ်ပွားသည့်နေ့: ၁၇ သြဂုတ် ၂၀၂၆ မှစ၍ (သုည မတော်တဆမှု)",
 
     nav: {
       dashboard: "ဒက်ရှ်ဘုတ်",
@@ -1355,7 +1355,7 @@ export const translations: Record<Language, TranslationDictionary> = {
       heroSubtitle: "စက္ကူမလို EHS ဘေးကင်းရေး စံနှုန်း",
       heroDesc: "အလွန်အန္တရာယ်များသော အလုပ် ၈ မျိုးကို ဒစ်ဂျစ်တယ်စနစ်ဖြင့် စိစစ်အတည်ပြုပြီး Google Drive တွင် တရားဝင် သိမ်းဆည်းပါသည်။",
       daysUnit: "ရက်",
-      zeroLti: "မတော်တဆမှု ကင်းစင် (Zero LTI)",
+      zeroLti: "နောက်ဆုံး မတော်တဆမှု: ၁၇ သြဂုတ် ၂၀၂၆ · Zero LTI",
       activeDesc: "စစ်ဆေးမှု ပြုလုပ်နေဆဲ",
       pendingDesc: "စိစစ်အတည်ပြုချက် စောင့်ဆိုင်းနေသည်",
       approvedDesc: "စတင်လုပ်ဆောင်နိုင်သည်",
