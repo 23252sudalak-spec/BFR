@@ -4,7 +4,7 @@ import {
   Download, Printer, AlertTriangle, CheckCircle, 
   Clock, Flame, Layers, ShieldAlert, Zap, HardHat, 
   Building, ChevronRight, UserCheck, Eye, RefreshCw, 
-  ExternalLink, Sparkles
+  ExternalLink, Sparkles, FileSpreadsheet
 } from 'lucide-react';
 
 import { 
@@ -14,6 +14,7 @@ import {
 import { translations } from './i18n/translations';
 import { mockUsers, initialPermits, initialNotifications, mockDriveArchive } from './data/mockData';
 import { triggerCsvDownload, simulateGoogleAppsScriptWebhook } from './services/driveSyncService';
+import { appendPermitToSheets } from './services/googleSheetsService';
 
 import { PermitFormModal } from './components/PermitFormModal';
 import { PermitDetailModal } from './components/PermitDetailModal';
@@ -77,7 +78,7 @@ export default function App() {
   const unreadNotifs = notifications.filter(n => !n.read).length;
 
   // Handlers
-  const handleCreatePermit = (newPermit: WorkPermit) => {
+  const handleCreatePermit = async (newPermit: WorkPermit) => {
     setPermits(prev => [newPermit, ...prev]);
 
     // Dispatch webhook notification
@@ -92,9 +93,27 @@ export default function App() {
       read: false
     };
     setNotifications(prev => [newNotif, ...prev]);
+
+    // Direct Google Sheets Append via Cloudflare Worker
+    try {
+      const sheetsResult = await appendPermitToSheets(newPermit, 'create');
+      const sheetsNotif: SafetyNotification = {
+        id: `notif-sheets-${Date.now()}`,
+        title: `📊 ซิงค์ Google Sheets อัตโนมัติ`,
+        message: `${sheetsResult.message} (Permit: ${newPermit.permitNumber})`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        channel: 'system',
+        permitId: newPermit.id,
+        type: sheetsResult.success ? 'success' : 'info',
+        read: false
+      };
+      setNotifications(prev => [sheetsNotif, ...prev]);
+    } catch (err) {
+      console.error('Google Sheets automatic append failed:', err);
+    }
   };
 
-  const handleUpdatePermit = (updated: WorkPermit, notificationMessage?: string) => {
+  const handleUpdatePermit = async (updated: WorkPermit, notificationMessage?: string) => {
     setPermits(prev => prev.map(p => p.id === updated.id ? updated : p));
     setSelectedPermitForDetail(updated);
 
@@ -110,6 +129,15 @@ export default function App() {
         read: false
       };
       setNotifications(prev => [newNotif, ...prev]);
+    }
+
+    // Auto append/log state change in Google Sheets when permit is approved, active, or closed
+    if (updated.status === 'approved' || updated.status === 'active' || updated.status === 'closed') {
+      try {
+        await appendPermitToSheets(updated, updated.status === 'closed' ? 'close' : 'update');
+      } catch (err) {
+        console.error('Failed to sync updated permit to Google Sheets:', err);
+      }
     }
   };
 
@@ -296,15 +324,24 @@ export default function App() {
         </div>
       </header>
 
-      {/* 2. GOOGLE DRIVE SYNC STATUS BAR */}
+      {/* 2. GOOGLE DRIVE & SHEETS SYNC STATUS BAR */}
       <div className="bg-slate-900 border-b border-slate-800/80 px-4 sm:px-8 py-2 text-xs flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-slate-400">
-            <Cloud className="w-3.5 h-3.5 text-sky-400" />
-            <span>Google Drive Sync:</span>
-            <span className="text-emerald-400 font-medium">Connected & Active</span>
+          <button
+            onClick={() => setIsDriveModalOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium transition-colors cursor-pointer"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" />
+            <span>Google Sheets Live Append</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
+          
+          <div className="hidden md:flex items-center gap-1.5 text-slate-400">
             <span className="text-slate-600">·</span>
-            <span className="text-slate-500 font-mono hidden sm:inline">WorkPermit_Database.csv (Synced {lastSyncedTime})</span>
+            <span>Cloudflare Workers:</span>
+            <span className="text-sky-400 font-mono text-[11px]">Ready / Active</span>
+            <span className="text-slate-600">·</span>
+            <span className="text-slate-500 font-mono hidden lg:inline">Last Sync: {lastSyncedTime}</span>
           </div>
         </div>
 
@@ -331,7 +368,7 @@ export default function App() {
             className="flex items-center gap-1 text-slate-400 hover:text-sky-400 transition-colors cursor-pointer"
           >
             <ExternalLink className="w-3 h-3" />
-            <span>Drive Archive</span>
+            <span>Sheets & Drive Hub</span>
           </button>
         </div>
       </div>
