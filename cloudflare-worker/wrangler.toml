@@ -4,9 +4,8 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-SPREADSHEET_ID = "รหัส Spreadsheet ID ยาวๆ ของคุณ"
+SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4"
 SHEET_NAME = "Sheet1"
 ALLOWED_ORIGIN = "*"
-CLIENT_EMAIL = "อีเมลระบบ @basic-breaker... ของคุณ"
-PRIVATE_KEY = "รหัสลับยาวๆ ที่ขึ้นต้นด้วย -----BEGIN PRIVATE KEY----- ของคุณ"
-
+CLIENT_EMAIL = "ehs-ptw-digital-2325@basic-breaker-513007-c1.iam.gserviceaccount.com"
+PRIVATE_KEY = "BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCmlNZci+ohvbum"
