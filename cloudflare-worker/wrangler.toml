@@ -4,12 +4,9 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 [vars]
-# SPREADSHEET_ID can be set here or in Cloudflare Dashboard Secrets
-# SPREADSHEET_ID = "YOUR_SPREADSHEET_ID"
-SHEET_NAME = "WorkPermits"
+SPREADSHEET_ID = "รหัส Spreadsheet ID ยาวๆ ของคุณ"
+SHEET_NAME = "Sheet1"
 ALLOWED_ORIGIN = "*"
+CLIENT_EMAIL = "อีเมลระบบ @basic-breaker... ของคุณ"
+PRIVATE_KEY = "รหัสลับยาวๆ ที่ขึ้นต้นด้วย -----BEGIN PRIVATE KEY----- ของคุณ"
 
-# SECRETS (Do NOT commit real keys here, set in Cloudflare Dashboard > Settings > Variables):
-# - JSON_KEY (or CLIENT_EMAIL and PRIVATE_KEY)
-# - SPREADSHEET_ID
-# - API_SECRET_KEY (optional)
