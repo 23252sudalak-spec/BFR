@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, Plus, Search, Filter, Cloud, Bell, 
   Download, Printer, AlertTriangle, CheckCircle, 
@@ -14,7 +14,12 @@ import {
 import { translations } from './i18n/translations';
 import { mockUsers, initialPermits, initialNotifications, mockDriveArchive } from './data/mockData';
 import { triggerCsvDownload, simulateGoogleAppsScriptWebhook } from './services/driveSyncService';
-import { appendPermitToSheets } from './services/googleSheetsService';
+import { 
+  appendPermitToSheets, 
+  fetchPermitsFromSheets, 
+  loadCachedPermits, 
+  saveCachedPermits 
+} from './services/googleSheetsService';
 
 import { PermitFormModal } from './components/PermitFormModal';
 import { PermitDetailModal } from './components/PermitDetailModal';
@@ -31,8 +36,17 @@ export default function App() {
   // Current logged in User (Default: Safety Officer)
   const [currentUser, setCurrentUser] = useState<User>(mockUsers[0]);
 
-  // Main State
-  const [permits, setPermits] = useState<WorkPermit[]>(initialPermits);
+  // Main State with offline / cached persistence
+  const [permits, setPermits] = useState<WorkPermit[]>(() => {
+    const cached = loadCachedPermits();
+    if (cached && cached.length > 0) {
+      return cached;
+    }
+    return initialPermits;
+  });
+  const [isLoadingSheetsData, setIsLoadingSheetsData] = useState(false);
+  const [lastSheetsFetchTime, setLastSheetsFetchTime] = useState<string | null>(null);
+
   const [notifications, setNotifications] = useState<SafetyNotification[]>(initialNotifications);
   const [driveArchive, setDriveArchive] = useState<DriveArchiveItem[]>(mockDriveArchive);
 
@@ -77,9 +91,59 @@ export default function App() {
   const closedCount = permits.filter(p => p.status === 'closed').length;
   const unreadNotifs = notifications.filter(n => !n.read).length;
 
+  // Fetch all permits from Google Sheets via Cloudflare Worker
+  const fetchSheetsData = async (isManual = false) => {
+    setIsLoadingSheetsData(true);
+    try {
+      const res = await fetchPermitsFromSheets();
+      if (res.success && res.permits && res.permits.length > 0) {
+        setPermits(res.permits);
+        saveCachedPermits(res.permits);
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setLastSheetsFetchTime(timeStr);
+        setLastSyncedTime(timeStr);
+
+        const newNotif: SafetyNotification = {
+          id: `notif-sheets-fetch-${Date.now()}`,
+          title: '📊 ซิงค์ข้อมูล Google Sheets สำเร็จ',
+          message: `ดึงข้อมูลใบอนุญาตทำงาน ${res.permits.length} รายการจาก Google Sheets อัตโนมัติเรียบร้อยแล้ว`,
+          timestamp: timeStr,
+          channel: 'system',
+          type: 'success',
+          read: false,
+        };
+        setNotifications(prev => [newNotif, ...prev]);
+      } else if (isManual && !res.success) {
+        const failNotif: SafetyNotification = {
+          id: `notif-sheets-fail-${Date.now()}`,
+          title: '⚠️ ซิงค์ข้อมูล Google Sheets',
+          message: res.message || 'ไม่สามารถดึงข้อมูลได้ โปรดตรวจสอบ Worker URL ในเมนู Sheets & Drive Hub',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          channel: 'system',
+          type: 'warning',
+          read: false,
+        };
+        setNotifications(prev => [failNotif, ...prev]);
+      }
+    } catch (e: any) {
+      console.warn('Failed to fetch permits from Google Sheets:', e);
+    } finally {
+      setIsLoadingSheetsData(false);
+    }
+  };
+
+  // Automatically fetch from Google Sheets upon initial app launch / page refresh
+  useEffect(() => {
+    fetchSheetsData(false);
+  }, []);
+
   // Handlers
   const handleCreatePermit = async (newPermit: WorkPermit) => {
-    setPermits(prev => [newPermit, ...prev]);
+    setPermits(prev => {
+      const updated = [newPermit, ...prev];
+      saveCachedPermits(updated);
+      return updated;
+    });
 
     // Dispatch webhook notification
     const newNotif: SafetyNotification = {
@@ -114,7 +178,11 @@ export default function App() {
   };
 
   const handleUpdatePermit = async (updated: WorkPermit, notificationMessage?: string) => {
-    setPermits(prev => prev.map(p => p.id === updated.id ? updated : p));
+    setPermits(prev => {
+      const updatedList = prev.map(p => p.id === updated.id ? updated : p);
+      saveCachedPermits(updatedList);
+      return updatedList;
+    });
     setSelectedPermitForDetail(updated);
 
     if (notificationMessage) {
@@ -326,22 +394,35 @@ export default function App() {
 
       {/* 2. GOOGLE DRIVE & SHEETS SYNC STATUS BAR */}
       <div className="bg-slate-900 border-b border-slate-800/80 px-4 sm:px-8 py-2 text-xs flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => setIsDriveModalOpen(true)}
             className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium transition-colors cursor-pointer"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
-            <span>Google Sheets Live Append</span>
+            <span>Google Sheets Live Sync</span>
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          </button>
+
+          <button
+            onClick={() => fetchSheetsData(true)}
+            disabled={isLoadingSheetsData}
+            title="ดึงข้อมูลใบงานทั้งหมดจาก Google Sheets ใหม่ทันที"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 font-medium transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isLoadingSheetsData ? 'animate-spin text-sky-400' : ''}`} />
+            <span>{isLoadingSheetsData ? 'กำลังโหลดจากชีต...' : 'รีเฟรชจาก Google Sheets'}</span>
           </button>
           
           <div className="hidden md:flex items-center gap-1.5 text-slate-400">
             <span className="text-slate-600">·</span>
-            <span>Cloudflare Workers:</span>
-            <span className="text-sky-400 font-mono text-[11px]">Ready / Active</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-slate-500 font-mono hidden lg:inline">Last Sync: {lastSyncedTime}</span>
+            <span className="text-emerald-400 font-mono text-[11px] font-semibold">{permits.length} ใบงาน</span>
+            {lastSheetsFetchTime && (
+              <>
+                <span className="text-slate-600">·</span>
+                <span className="text-slate-400 font-mono text-[11px]">ดึงข้อมูลล่าสุด: {lastSheetsFetchTime}</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -767,6 +848,12 @@ export default function App() {
         driveArchive={driveArchive}
         language={language}
         onClose={() => setIsDriveModalOpen(false)}
+        onPermitsReloaded={loadedPermits => {
+          setPermits(loadedPermits);
+          saveCachedPermits(loadedPermits);
+          const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          setLastSheetsFetchTime(timeStr);
+        }}
         onSyncComplete={msg => {
           setLastSyncedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
         }}

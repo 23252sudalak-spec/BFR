@@ -13,6 +13,7 @@ import {
   appendPermitToSheets, 
   testWorkerConnection, 
   loadSyncLogs, 
+  fetchPermitsFromSheets,
   SheetsSyncLog, 
   SheetsWorkerConfig 
 } from '../services/googleSheetsService';
@@ -24,6 +25,7 @@ interface DriveSyncModalProps {
   language: Language;
   onClose: () => void;
   onSyncComplete?: (msg: string) => void;
+  onPermitsReloaded?: (permits: WorkPermit[]) => void;
 }
 
 export const DriveSyncModal: React.FC<DriveSyncModalProps> = ({
@@ -32,7 +34,8 @@ export const DriveSyncModal: React.FC<DriveSyncModalProps> = ({
   driveArchive,
   language,
   onClose,
-  onSyncComplete
+  onSyncComplete,
+  onPermitsReloaded
 }) => {
   if (!isOpen) return null;
   const t = translations[language];
@@ -44,6 +47,8 @@ export const DriveSyncModal: React.FC<DriveSyncModalProps> = ({
   const [connectionTestResult, setConnectionTestResult] = useState<{ success: boolean; message: string; details?: any } | null>(null);
   const [isSendingTestRow, setIsSendingTestRow] = useState(false);
   const [sendTestRowResult, setSendTestRowResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isFetchingData, setIsFetchingData] = useState(false);
+  const [fetchResult, setFetchResult] = useState<{ success: boolean; message: string; count?: number } | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
@@ -112,6 +117,33 @@ export const DriveSyncModal: React.FC<DriveSyncModalProps> = ({
       }
     } finally {
       setIsSendingTestRow(false);
+    }
+  };
+
+  const handleFetchPermits = async () => {
+    setIsFetchingData(true);
+    setFetchResult(null);
+    try {
+      const res = await fetchPermitsFromSheets();
+      setFetchResult({
+        success: res.success,
+        message: res.message,
+        count: res.count,
+      });
+      setSyncLogs(loadSyncLogs());
+      if (res.success && res.permits && onPermitsReloaded) {
+        onPermitsReloaded(res.permits);
+      }
+      if (onSyncComplete) {
+        onSyncComplete(res.message);
+      }
+    } catch (err: any) {
+      setFetchResult({
+        success: false,
+        message: err.message || 'เกิดข้อผิดพลาดในการดึงข้อมูล',
+      });
+    } finally {
+      setIsFetchingData(false);
     }
   };
 
@@ -217,7 +249,16 @@ export const DriveSyncModal: React.FC<DriveSyncModalProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                <button
+                  onClick={handleFetchPermits}
+                  disabled={isFetchingData}
+                  className="px-3.5 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-xl transition-all shadow-md shadow-sky-500/20 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isFetchingData ? 'animate-spin' : ''}`} />
+                  <span>{isFetchingData ? 'กำลังดึงข้อมูล...' : 'ดึงข้อมูลจากชีต (Fetch All)'}</span>
+                </button>
+
                 <button
                   onClick={handleSendTestPermit}
                   disabled={isSendingTestRow}
@@ -228,6 +269,30 @@ export const DriveSyncModal: React.FC<DriveSyncModalProps> = ({
                 </button>
               </div>
             </div>
+
+            {/* Fetch Data Feedback Banner */}
+            {fetchResult && (
+              <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 text-xs ${
+                fetchResult.success 
+                  ? 'bg-sky-950/60 border-sky-500/40 text-sky-200' 
+                  : 'bg-amber-950/60 border-amber-500/40 text-amber-200'
+              }`}>
+                <div className="flex items-center gap-2">
+                  {fetchResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+                  )}
+                  <span>{fetchResult.message}</span>
+                </div>
+                <button
+                  onClick={() => setFetchResult(null)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Test Send Feedback Banner */}
             {sendTestRowResult && (

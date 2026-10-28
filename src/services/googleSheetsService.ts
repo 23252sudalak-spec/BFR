@@ -26,16 +26,40 @@ export interface SheetsSyncLog {
 
 const STORAGE_KEY = 'eptw_cloudflare_sheets_config';
 const LOGS_STORAGE_KEY = 'eptw_sheets_sync_logs';
+const CACHED_PERMITS_KEY = 'eptw_cached_permits';
 
 export const getDefaultSheetsConfig = (): SheetsWorkerConfig => {
   return {
     workerUrl: (import.meta as any).env?.VITE_CLOUDFLARE_WORKER_URL || '',
-    spreadsheetId: (import.meta as any).env?.VITE_GOOGLE_SPREADSHEET_ID || '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
-    sheetName: 'WorkPermits',
+    spreadsheetId: (import.meta as any).env?.VITE_GOOGLE_SPREADSHEET_ID || '1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4',
+    sheetName: 'Sheet1',
     apiKey: '',
     autoSyncOnCreate: true,
     autoSyncOnStatusChange: true,
   };
+};
+
+export const loadCachedPermits = (): WorkPermit[] | null => {
+  try {
+    const raw = localStorage.getItem(CACHED_PERMITS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load cached permits', e);
+  }
+  return null;
+};
+
+export const saveCachedPermits = (permits: WorkPermit[]): void => {
+  try {
+    localStorage.setItem(CACHED_PERMITS_KEY, JSON.stringify(permits));
+  } catch (e) {
+    console.error('Failed to save permits cache', e);
+  }
 };
 
 export const loadSheetsConfig = (): SheetsWorkerConfig => {
@@ -242,3 +266,97 @@ export const testWorkerConnection = async (
     };
   }
 };
+
+/**
+ * Fetch all permits from Google Sheets via Cloudflare Worker
+ */
+export const fetchPermitsFromSheets = async (): Promise<{
+  success: boolean;
+  permits: WorkPermit[];
+  count: number;
+  message: string;
+  isSimulated?: boolean;
+}> => {
+  const config = loadSheetsConfig();
+
+  // If a live Cloudflare Worker URL is configured
+  if (config.workerUrl && config.workerUrl.trim().length > 0) {
+    try {
+      const cleanUrl = config.workerUrl.replace(/\/+$/, '');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (config.apiKey) {
+        headers['Authorization'] = `Bearer ${config.apiKey}`;
+      }
+
+      const response = await fetch(`${cleanUrl}/api/permits`, {
+        method: 'GET',
+        headers,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+
+      const fetchedPermits: WorkPermit[] = Array.isArray(data.permits) ? data.permits : [];
+
+      // Save to localStorage cache so app stays populated even offline
+      if (fetchedPermits.length > 0) {
+        saveCachedPermits(fetchedPermits);
+      }
+
+      const logItem: SheetsSyncLog = {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        permitNumber: `ALL (${fetchedPermits.length})`,
+        status: 'success',
+        message: `โหลดข้อมูลใบงานสำเร็จทั้งหมด ${fetchedPermits.length} รายการจาก Google Sheets (${config.sheetName || 'Sheet1'})`,
+        rowDetails: `Spreadsheet: ${config.spreadsheetId}`,
+      };
+      addSyncLog(logItem);
+
+      return {
+        success: true,
+        permits: fetchedPermits,
+        count: fetchedPermits.length,
+        message: `ดึงข้อมูลจาก Google Sheets สำเร็จ (${fetchedPermits.length} รายการ)`,
+        isSimulated: false,
+      };
+    } catch (err: any) {
+      console.error('Fetch permits from Cloudflare Worker failed:', err);
+      // Fallback to local cache
+      const cached = loadCachedPermits() || [];
+      return {
+        success: false,
+        permits: cached,
+        count: cached.length,
+        message: `ไม่สามารถดึงข้อมูลจาก Cloudflare Worker ได้ (${err.message}) แต่โหลดจากข้อมูลที่แคชไว้ในเครื่อง`,
+        isSimulated: false,
+      };
+    }
+  }
+
+  // If no worker URL is set, check local cache first
+  const cached = loadCachedPermits();
+  if (cached && cached.length > 0) {
+    return {
+      success: true,
+      permits: cached,
+      count: cached.length,
+      message: `โหลดข้อมูลใบงานจาก Local Cache (${cached.length} รายการ)`,
+      isSimulated: true,
+    };
+  }
+
+  return {
+    success: false,
+    permits: [],
+    count: 0,
+    message: 'ยังไม่ได้ระบุ Cloudflare Worker URL ในการตั้งค่า',
+    isSimulated: true,
+  };
+};
+

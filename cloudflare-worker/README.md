@@ -101,7 +101,20 @@
      "timestamp": "2026-10-28T07:30:00.000Z"
    }
    ```
-3. นำ Worker URL นี้ไปใส่ในหน้าเว็บ e-PTW ที่เมนู **Google Drive/Sheets Sync Hub** เพื่อเปิดใช้งานการบันทึกข้อมูลแบบเรียลไทม์อัตโนมัติ
+3. ทดสอบดึงข้อมูลใบงานทั้งหมดจากชีต:
+   `https://eptw-sheets-sync.yourname.workers.dev/api/permits`
+   ระบบจะอ่านข้อมูลทุกแถวใน Google Sheets แล้วแปลงกลับเป็นรายการใบอนุญาตทำงาน (e-PTW):
+   ```json
+   {
+     "success": true,
+     "count": 5,
+     "totalRows": 6,
+     "permits": [...],
+     "spreadsheetId": "1QsME3...",
+     "sheetName": "Sheet1"
+   }
+   ```
+4. นำ Worker URL นี้ไปใส่ในหน้าเว็บ e-PTW ที่เมนู **Google Drive/Sheets Sync Hub** หรือระบุใน `.env` เพื่อให้ระบบดึงข้อมูลใบงานทั้งหมดจากชีตมาแสดงในตารางอัตโนมัติทุกครั้งที่เปิดเว็บหรือรีเฟรชหน้าจอ
 
 ---
 
