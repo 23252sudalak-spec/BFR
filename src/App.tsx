@@ -91,6 +91,17 @@ export default function App() {
   const closedCount = permits.filter(p => p.status === 'closed').length;
   const unreadNotifs = notifications.filter(n => !n.read).length;
 
+  // Dynamic Calculation: Continuous Safety Working Days (วันทำงานปลอดภัยต่อเนื่อง นับจากอุบัติเหตุครั้งล่าสุด 17 ส.ค. 2026)
+  const calculateSafetyDays = (): number => {
+    const lastAccidentDate = new Date('2026-08-17');
+    const today = new Date();
+    const utc1 = Date.UTC(lastAccidentDate.getUTCFullYear(), lastAccidentDate.getUTCMonth(), lastAccidentDate.getUTCDate());
+    const utc2 = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    const diffDays = Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
+  const safetyDaysCount = calculateSafetyDays();
+
   // Fetch all permits from Google Sheets via Cloudflare Worker
   const fetchSheetsData = async (isManual = false) => {
     setIsLoadingSheetsData(true);
@@ -523,7 +534,7 @@ export default function App() {
                       {t.zeroAccidentDays}
                     </span>
                     <div className="text-2xl font-extrabold text-slate-100 font-mono tabular-nums">
-                      72 <span className="text-sm font-normal text-slate-400">{t.dashboard.daysUnit}</span>
+                      {safetyDaysCount} <span className="text-sm font-normal text-slate-400">{t.dashboard.daysUnit}</span>
                     </div>
                     <span className="text-[11px] text-emerald-400/90 font-medium">{t.dashboard.zeroLti}</span>
                   </div>

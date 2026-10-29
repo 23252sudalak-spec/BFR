@@ -24,6 +24,17 @@ export const MonthlySafetyReport: React.FC<MonthlySafetyReportProps> = ({
   const [isSavingToDrive, setIsSavingToDrive] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
 
+  // Dynamic Calculation: Continuous Safety Working Days (วันทำงานปลอดภัยต่อเนื่อง นับจากอุบัติเหตุครั้งล่าสุด 17 ส.ค. 2026)
+  const calculateSafetyDays = (): number => {
+    const lastAccidentDate = new Date('2026-08-17');
+    const today = new Date();
+    const utc1 = Date.UTC(lastAccidentDate.getUTCFullYear(), lastAccidentDate.getUTCMonth(), lastAccidentDate.getUTCDate());
+    const utc2 = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+    const diffDays = Math.floor((utc2 - utc1) / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
+  const safetyDaysCount = calculateSafetyDays();
+
   // Filter permits by month
   const monthlyPermits = permits.filter(p => p.startDate.startsWith(selectedMonth));
 
@@ -127,7 +138,7 @@ export const MonthlySafetyReport: React.FC<MonthlySafetyReportProps> = ({
               <span className="text-xs text-slate-400">BANFERT Plant Safety Target</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 mt-0.5 tracking-tight">
-              72 <span className="text-lg font-normal text-emerald-400">{t.zeroAccidentDays}</span>
+              {safetyDaysCount} <span className="text-lg font-normal text-emerald-400">{t.zeroAccidentDays}</span>
             </h2>
             <p className="text-xs text-emerald-400/90 font-medium mt-0.5">{t.zeroAccidentSubtitle}</p>
           </div>
