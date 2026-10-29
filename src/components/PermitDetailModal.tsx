@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, CheckCircle, AlertTriangle, ShieldCheck, 
-  Printer, Cloud, PenTool, Check, Ban, Eye, FileText, CheckCircle2
+  Printer, Cloud, PenTool, Check, Ban, Eye, FileText, CheckCircle2,
+  Upload, Image as ImageIcon
 } from 'lucide-react';
 import { 
   Language, User, WorkPermit, SafetyAudit 
 } from '../types/permit';
 import { translations } from '../i18n/translations';
-import { DigitalSignaturePad } from './DigitalSignaturePad';
+import { DigitalSignaturePad, processSignatureImageFile } from './DigitalSignaturePad';
 
 interface PermitDetailModalProps {
   isOpen: boolean;
@@ -30,9 +31,14 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
   const t = translations[language];
 
   const [activeTab, setActiveTab] = useState<'details' | 'checklist' | 'jsa' | 'audits' | 'closure'>('details');
-  const [signatureRole, setSignatureRole] = useState<'safetyOfficer' | 'closure' | null>(null);
+  const [signatureRole, setSignatureRole] = useState<'requester' | 'safetyOfficer' | 'closure' | null>(null);
+  const [signaturePadMode, setSignaturePadMode] = useState<'draw' | 'upload'>('draw');
+  const [signatureNotice, setSignatureNotice] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectBox, setShowRejectBox] = useState(false);
+
+  const requesterFileInputRef = useRef<HTMLInputElement | null>(null);
+  const soFileInputRef = useRef<HTMLInputElement | null>(null);
   
   // Audit Modal state
   const [showAuditBox, setShowAuditBox] = useState(false);
@@ -50,6 +56,46 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
   // Role verification checks
   const canVerifyAsSO = currentUser.role === 'safety_officer' || currentUser.role === 'admin';
   const isWorker = currentUser.role === 'worker';
+
+  // Handle Requester Signature (from Draw or Upload)
+  const handleSignRequester = (dataUrl: string) => {
+    const updated: WorkPermit = {
+      ...permit,
+      signatures: {
+        ...permit.signatures,
+        requester: {
+          role: 'ผู้ขออนุญาต / ผู้รับเหมา',
+          signerName: permit.requester?.name || currentUser.name || 'Applicant',
+          signatureDataUrl: dataUrl,
+          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          signerCompany: permit.contractorCompany || currentUser.company
+        }
+      },
+      updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
+    };
+
+    const notif = `[${permit.permitNumber}] บันทึกลายเซ็นผู้ขออนุญาต (${permit.requester?.name || currentUser.name}) เรียบร้อยแล้ว`;
+    onUpdatePermit(updated, notif);
+    setSignatureRole(null);
+  };
+
+  // Direct file upload for Requester
+  const handleRequesterFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSignatureNotice('กำลังประมวลผลรูปภาพลายเซ็น...');
+      const dataUrl = await processSignatureImageFile(file);
+      handleSignRequester(dataUrl);
+      setSignatureNotice('อัปโหลดและบันทึกภาพลายเซ็นผู้ขออนุญาตเรียบร้อย');
+      setTimeout(() => setSignatureNotice(null), 3500);
+    } catch (err: any) {
+      setSignatureNotice(err?.message || 'เกิดข้อผิดพลาดในการอัปโหลดภาพ');
+      setTimeout(() => setSignatureNotice(null), 4000);
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
 
   // Handle Safety Officer Approval (Now directly approves & enables work!)
   const handleSignSO = (dataUrl: string) => {
@@ -73,6 +119,24 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
     const notif = `[${permit.permitNumber}] จป.วิชาชีพ (${currentUser.name}) ตรวจสอบและลงนามอนุมัติเรียบร้อยแล้ว (Approved - พร้อมปฏิบัติงานทันที)`;
     onUpdatePermit(updated, notif);
     setSignatureRole(null);
+  };
+
+  // Direct file upload for Safety Officer
+  const handleSOFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setSignatureNotice('กำลังประมวลผลรูปภาพลายเซ็น...');
+      const dataUrl = await processSignatureImageFile(file);
+      handleSignSO(dataUrl);
+      setSignatureNotice('อัปโหลดและลงนามอนุมัติเรียบร้อย (Approved)');
+      setTimeout(() => setSignatureNotice(null), 3500);
+    } catch (err: any) {
+      setSignatureNotice(err?.message || 'เกิดข้อผิดพลาดในการอัปโหลดภาพ');
+      setTimeout(() => setSignatureNotice(null), 4000);
+    } finally {
+      if (e.target) e.target.value = '';
+    }
   };
 
   // Start Work (set to Active)
@@ -452,10 +516,34 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
 
               {/* Digital Signatures Matrix - 2 Steps: Requester & Safety Officer */}
               <div className="space-y-3">
+                {/* Hidden File Inputs for Signature Uploads */}
+                <input 
+                  type="file" 
+                  ref={requesterFileInputRef} 
+                  accept="image/png,image/jpeg,image/jpg,image/webp" 
+                  className="hidden" 
+                  onChange={handleRequesterFileChange} 
+                />
+                <input 
+                  type="file" 
+                  ref={soFileInputRef} 
+                  accept="image/png,image/jpeg,image/jpg,image/webp" 
+                  className="hidden" 
+                  onChange={handleSOFileChange} 
+                />
+
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-300">{t.detail.sigMatrixTitle}</span>
                   <span className="text-[11px] text-slate-400 font-mono">2-Step Approval Chain</span>
                 </div>
+
+                {signatureNotice && (
+                  <div className="p-3 bg-sky-950/70 border border-sky-500/40 rounded-xl text-xs text-sky-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+                    <span>{signatureNotice}</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* กล่องที่ 1: ผู้ขออนุญาต / ผู้รับเหมา (ลงนามขอเปิดงาน) */}
                   <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3 flex flex-col justify-between">
@@ -467,18 +555,60 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                       <div className="font-bold text-slate-200 mt-1 text-sm">{permit.signatures.requester?.signerName || permit.requester?.name || 'Applicant'}</div>
                       <span className="text-xs text-slate-400">{permit.contractorCompany}</span>
                     </div>
+
                     {permit.signatures.requester ? (
-                      <div className="pt-2 border-t border-slate-800/80">
-                        <img 
-                          src={permit.signatures.requester.signatureDataUrl} 
-                          alt="Signature" 
-                          className="h-10 object-contain invert opacity-80" 
-                        />
-                        <span className="text-[10px] text-slate-500 font-mono block mt-1">{permit.signatures.requester.timestamp}</span>
+                      <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                        <div className="p-2.5 bg-slate-900 border border-slate-800 rounded-lg flex items-center justify-center min-h-[58px]">
+                          <img 
+                            src={permit.signatures.requester.signatureDataUrl} 
+                            alt="Requester Signature" 
+                            className="max-h-12 max-w-full object-contain filter invert opacity-90" 
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[10px] text-slate-500 font-mono">{permit.signatures.requester.timestamp}</span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => { setSignaturePadMode('draw'); setSignatureRole('requester'); }}
+                              className="text-[11px] text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <PenTool className="w-3 h-3" />
+                              <span>เซ็นใหม่</span>
+                            </button>
+                            <span className="text-slate-600">|</span>
+                            <button
+                              type="button"
+                              onClick={() => requesterFileInputRef.current?.click()}
+                              className="text-[11px] text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <Upload className="w-3 h-3" />
+                              <span>อัปโหลดภาพใหม่</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     ) : (
-                      <div className="h-12 flex items-center justify-center text-xs text-slate-600 border border-dashed border-slate-800 rounded-lg">
-                        {t.detail.sigNotSigned}
+                      <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => { setSignaturePadMode('draw'); setSignatureRole('requester'); }}
+                            className="py-2.5 px-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <PenTool className="w-3.5 h-3.5" />
+                            <span>เซ็นสด (Draw)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => requesterFileInputRef.current?.click()}
+                            className="py-2.5 px-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 font-semibold rounded-lg text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                          >
+                            <Upload className="w-3.5 h-3.5 text-sky-400" />
+                            <span>อัปโหลดภาพ</span>
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-500 text-center">รองรับวาดบนจอสัมผัส หรือไฟล์รูปภาพ .png, .jpg</p>
                       </div>
                     )}
                   </div>
@@ -495,25 +625,65 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                       </div>
                       <span className="text-xs text-slate-400">Apex Safety & EHS Division</span>
                     </div>
+
                     {permit.signatures.safetyOfficer ? (
-                      <div className="pt-2 border-t border-slate-800/80">
-                        <img 
-                          src={permit.signatures.safetyOfficer.signatureDataUrl} 
-                          alt="Signature" 
-                          className="h-10 object-contain invert opacity-80" 
-                        />
-                        <span className="text-[10px] text-slate-500 font-mono block mt-1">{permit.signatures.safetyOfficer.timestamp}</span>
+                      <div className="pt-2 border-t border-slate-800/80 space-y-2">
+                        <div className="p-2.5 bg-slate-900 border border-emerald-900/30 rounded-lg flex items-center justify-center min-h-[58px]">
+                          <img 
+                            src={permit.signatures.safetyOfficer.signatureDataUrl} 
+                            alt="Safety Officer Signature" 
+                            className="max-h-12 max-w-full object-contain filter invert opacity-90" 
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-[10px] text-slate-500 font-mono">{permit.signatures.safetyOfficer.timestamp}</span>
+                          {canVerifyAsSO && (
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => { setSignaturePadMode('draw'); setSignatureRole('safetyOfficer'); }}
+                                className="text-[11px] text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <PenTool className="w-3 h-3" />
+                                <span>เซ็นใหม่</span>
+                              </button>
+                              <span className="text-slate-600">|</span>
+                              <button
+                                type="button"
+                                onClick={() => soFileInputRef.current?.click()}
+                                className="text-[11px] text-emerald-400 hover:text-emerald-300 hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <Upload className="w-3 h-3" />
+                                <span>อัปโหลดภาพใหม่</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <div>
-                        {canVerifyAsSO && permit.status === 'pending' ? (
-                          <button
-                            onClick={() => setSignatureRole('safetyOfficer')}
-                            className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-md shadow-emerald-500/10 flex items-center justify-center gap-1.5"
-                          >
-                            <ShieldCheck className="w-4 h-4" />
-                            <span>{t.detail.btnSoApprove}</span>
-                          </button>
+                        {canVerifyAsSO && (permit.status === 'pending' || permit.status === 'draft') ? (
+                          <div className="space-y-2 pt-2 border-t border-slate-800/80">
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => { setSignaturePadMode('draw'); setSignatureRole('safetyOfficer'); }}
+                                className="py-2.5 px-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-md shadow-emerald-500/10 flex items-center justify-center gap-1.5"
+                              >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                <span>เซ็นสดอนุมัติ</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => soFileInputRef.current?.click()}
+                                className="py-2.5 px-2 bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-emerald-500/40 hover:border-emerald-500 font-bold rounded-lg text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>อัปโหลดภาพ</span>
+                              </button>
+                            </div>
+                            <p className="text-[10px] text-slate-500 text-center">จป.วิชาชีพ: อนุมัติและเปิดใบงานทันที</p>
+                          </div>
                         ) : (
                           <div className="h-12 flex items-center justify-center text-xs text-slate-600 border border-dashed border-slate-800 rounded-lg">
                             {t.detail.sigNotSigned}
@@ -821,6 +991,23 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
             </div>
           )}
 
+          {/* Signature Pad overlay for Requester */}
+          {signatureRole === 'requester' && (
+            <div className="p-4 bg-slate-950 border border-sky-500/40 rounded-2xl space-y-3">
+              <span className="text-xs font-bold text-sky-400">
+                ลงนามโดย ผู้ขออนุญาต / ผู้รับเหมา (Applicant Signature)
+              </span>
+              <DigitalSignaturePad
+                signerName={permit.requester?.name || currentUser.name}
+                signerRole="Requester / Contractor"
+                language={language}
+                defaultMode={signaturePadMode}
+                onSave={handleSignRequester}
+                onCancel={() => setSignatureRole(null)}
+              />
+            </div>
+          )}
+
           {/* Signature Pad overlay for SO Final Approval */}
           {signatureRole === 'safetyOfficer' && (
             <div className="p-4 bg-slate-950 border border-emerald-500/40 rounded-2xl space-y-3">
@@ -831,6 +1018,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                 signerName={currentUser.name}
                 signerRole="Safety Officer (จป.วิชาชีพ)"
                 language={language}
+                defaultMode={signaturePadMode}
                 onSave={handleSignSO}
                 onCancel={() => setSignatureRole(null)}
               />

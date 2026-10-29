@@ -46,6 +46,8 @@ interface PermitPayload {
   gasTestO2?: number;
   gasTestLEL?: number;
   signaturesRecorded?: string;
+  requesterSignature?: string;
+  safetyOfficerSignature?: string;
   notes?: string;
   action?: 'create' | 'update' | 'close';
 }
@@ -244,6 +246,8 @@ function parseSheetRowsToPermits(rows: string[][]): any[] {
     const gasTestSummary = (row[15] || '').trim();
     const signaturesRecorded = (row[16] || '').trim();
     const notes = (row[18] || '').trim();
+    const requesterSignature = (row[19] || '').trim();
+    const safetyOfficerSignature = (row[20] || '').trim();
 
     // Map status
     let status: 'draft' | 'pending' | 'approved' | 'active' | 'closed' | 'rejected' | 'suspended' = 'pending';
@@ -313,27 +317,27 @@ function parseSheetRowsToPermits(rows: string[][]): any[] {
 
     // Generate signatures
     const signatures: Record<string, any> = {};
-    if (signaturesRecorded.includes('requester') || signaturesRecorded.includes('Yes') || signaturesRecorded.includes('Signed')) {
+    if (signaturesRecorded.includes('requester') || signaturesRecorded.includes('Yes') || signaturesRecorded.includes('Signed') || requesterSignature) {
       signatures.requester = {
         role: 'ผู้ขออนุญาต',
         signerName: requesterName,
-        signatureDataUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><path d="M10 20 Q 30 5 50 20 T 90 20" fill="none" stroke="%232563eb" stroke-width="2"/></svg>',
+        signatureDataUrl: requesterSignature || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><path d="M10 20 Q 30 5 50 20 T 90 20" fill="none" stroke="%232563eb" stroke-width="2"/></svg>',
         timestamp,
         signerCompany: contractorCompany,
       };
     }
-    if (status === 'approved' || status === 'active' || status === 'closed' || signaturesRecorded.includes('safetyOfficer')) {
+    if (status === 'approved' || status === 'active' || status === 'closed' || signaturesRecorded.includes('safetyOfficer') || safetyOfficerSignature) {
       signatures.safetyOfficer = {
         role: 'จป.วิชาชีพ',
         signerName: safetyOfficerName,
-        signatureDataUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><path d="M10 25 Q 40 5 60 25 T 90 20" fill="none" stroke="%2316a34a" stroke-width="2"/></svg>',
+        signatureDataUrl: safetyOfficerSignature || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><path d="M10 25 Q 40 5 60 25 T 90 20" fill="none" stroke="%2316a34a" stroke-width="2"/></svg>',
         timestamp,
         signerCompany: 'Banfert Safety Division',
       };
       signatures.approver = {
         role: 'ผู้อนุมัติ/ผู้จัดการส่วนงาน',
         signerName: approverName,
-        signatureDataUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><path d="M10 20 Q 30 35 60 15 T 90 25" fill="none" stroke="%239333ea" stroke-width="2"/></svg>',
+        signatureDataUrl: safetyOfficerSignature || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="40"><path d="M10 20 Q 30 35 60 15 T 90 25" fill="none" stroke="%239333ea" stroke-width="2"/></svg>',
         timestamp,
         signerCompany: 'Plant Operations',
       };
@@ -502,7 +506,7 @@ export default {
         const accessToken = await getGoogleAccessToken(creds.clientEmail, creds.privateKey);
 
         const sheetTarget = encodeURIComponent(creds.sheetName);
-        const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${creds.spreadsheetId}/values/${sheetTarget}!A:S`;
+        const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${creds.spreadsheetId}/values/${sheetTarget}!A:U`;
 
         const sheetsResponse = await fetch(sheetsApiUrl, {
           method: 'GET',
@@ -621,11 +625,13 @@ export default {
           payload.signaturesRecorded || 'Yes', // Column Q: การลงนามดิจิทัล
           payload.action || 'create',          // Column R: Action Type
           payload.notes || '',                 // Column S: หมายเหตุเพิ่มเติม
+          payload.requesterSignature || '',    // Column T: ภาพลายเซ็นผู้ขออนุญาต (Base64)
+          payload.safetyOfficerSignature || '',// Column U: ภาพลายเซ็น จป.วิชาชีพ (Base64)
         ];
 
         // Call Google Sheets API v4 append
         const sheetTarget = encodeURIComponent(creds.sheetName);
-        const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${creds.spreadsheetId}/values/${sheetTarget}!A:S:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+        const sheetsApiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${creds.spreadsheetId}/values/${sheetTarget}!A:U:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
 
         const sheetsResponse = await fetch(sheetsApiUrl, {
           method: 'POST',

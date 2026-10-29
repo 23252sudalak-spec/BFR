@@ -149,6 +149,8 @@ export const preparePermitPayload = (permit: WorkPermit, action: 'create' | 'upd
     gasTestLEL: permit.gasTestResults?.lel,
     signaturesRecorded: signatures || 'Signed Digitally',
     notes: permit.closureNotes || permit.rejectionReason || '',
+    requesterSignature: permit.signatures?.requester?.signatureDataUrl || '',
+    safetyOfficerSignature: permit.signatures?.safetyOfficer?.signatureDataUrl || '',
     action,
   };
 };

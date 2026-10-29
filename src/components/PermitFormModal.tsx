@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   X, Flame, ShieldAlert, Zap, AlertTriangle, 
-  Layers, HardHat, CheckCircle2, Info, Building
+  Layers, HardHat, CheckCircle2, Info, Building,
+  Upload, PenTool, Image as ImageIcon
 } from 'lucide-react';
 import { 
   Language, PermitType, User, WorkPermit, 
   ChecklistItem 
 } from '../types/permit';
 import { translations } from '../i18n/translations';
-import { DigitalSignaturePad } from './DigitalSignaturePad';
+import { DigitalSignaturePad, processSignatureImageFile } from './DigitalSignaturePad';
 
 interface PermitFormModalProps {
   isOpen: boolean;
@@ -88,6 +89,26 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
   // Requester Signature
   const [requesterSignature, setRequesterSignature] = useState<string | null>(null);
   const [showSignPad, setShowSignPad] = useState(false);
+  const [signPadMode, setSignPadMode] = useState<'draw' | 'upload'>('draw');
+  const [uploadNotice, setUploadNotice] = useState<string | null>(null);
+  const formFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFormFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadNotice('กำลังประมวลผลรูปภาพลายเซ็น...');
+      const dataUrl = await processSignatureImageFile(file);
+      setRequesterSignature(dataUrl);
+      setUploadNotice('อัปโหลดภาพลายเซ็นสำเร็จ');
+      setTimeout(() => setUploadNotice(null), 3000);
+    } catch (err: any) {
+      setUploadNotice(err?.message || 'เกิดข้อผิดพลาดในการอ่านไฟล์ภาพ');
+      setTimeout(() => setUploadNotice(null), 4000);
+    } finally {
+      if (e.target) e.target.value = '';
+    }
+  };
 
   // Switch type and sync defaults
   const handleTypeSelect = (type: PermitType) => {
@@ -464,39 +485,92 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                   <span className="text-xs font-mono text-sky-400 font-semibold">{currentUser.name}</span>
                 </div>
 
+                {/* Hidden File Input for signature upload */}
+                <input 
+                  type="file" 
+                  ref={formFileInputRef} 
+                  accept="image/png,image/jpeg,image/jpg,image/webp" 
+                  className="hidden" 
+                  onChange={handleFormFileChange} 
+                />
+
+                {uploadNotice && (
+                  <div className="p-2.5 bg-sky-950/70 border border-sky-500/40 rounded-lg text-xs text-sky-300 flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
+                    <span>{uploadNotice}</span>
+                  </div>
+                )}
+
                 {requesterSignature ? (
-                  <div className="p-3 bg-slate-900 border border-emerald-500/30 rounded-lg flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                      <div>
+                  <div className="p-4 bg-slate-900 border border-emerald-500/30 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         <span className="text-xs font-semibold text-slate-200">{t.detail.sigSigned}</span>
-                        <p className="text-[11px] text-slate-400">{currentUser.name} · {contractorCompany}</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => { setSignPadMode('draw'); setShowSignPad(true); }}
+                          className="text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <PenTool className="w-3.5 h-3.5" />
+                          <span>เซ็นใหม่</span>
+                        </button>
+                        <span className="text-slate-600">|</span>
+                        <button
+                          type="button"
+                          onClick={() => formFileInputRef.current?.click()}
+                          className="text-sky-400 hover:text-sky-300 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>อัปโหลดภาพใหม่</span>
+                        </button>
                       </div>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowSignPad(true)}
-                      className="text-xs text-sky-400 hover:underline"
-                    >
-                      {t.detail.btnSignNow}
-                    </button>
+                    {/* Preview box */}
+                    <div className="p-3 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-center min-h-[64px]">
+                      <img 
+                        src={requesterSignature} 
+                        alt="Signature Preview" 
+                        className="max-h-16 max-w-full object-contain filter invert opacity-90" 
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-slate-400">
+                      <span>{currentUser.name}</span>
+                      <span>{contractorCompany}</span>
+                    </div>
                   </div>
                 ) : (
                   <div>
                     {!showSignPad ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowSignPad(true)}
-                        className="w-full py-4 border-2 border-dashed border-sky-500/50 hover:border-sky-500 bg-sky-500/5 hover:bg-sky-500/10 rounded-xl text-sky-400 font-semibold text-xs flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
-                      >
-                        <HardHat className="w-6 h-6" />
-                        <span>{t.form.digitalSign}</span>
-                      </button>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => { setSignPadMode('draw'); setShowSignPad(true); }}
+                            className="p-4 border border-dashed border-sky-500/50 hover:border-sky-500 bg-sky-500/5 hover:bg-sky-500/10 rounded-xl text-sky-400 font-semibold text-xs flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
+                          >
+                            <PenTool className="w-6 h-6" />
+                            <span>วาดลายเซ็นสด (Draw Signature)</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => formFileInputRef.current?.click()}
+                            className="p-4 border border-dashed border-slate-700 hover:border-sky-400 bg-slate-900/60 hover:bg-slate-900 rounded-xl text-slate-200 font-semibold text-xs flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors"
+                          >
+                            <Upload className="w-6 h-6 text-sky-400" />
+                            <span>อัปโหลดภาพลายเซ็น (.png, .jpg)</span>
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-slate-500 text-center">สามารถเลือกวาดสดหรืออัปโหลดภาพลายเซ็นที่มีอยู่แล้ว</p>
+                      </div>
                     ) : (
                       <DigitalSignaturePad
                         signerName={currentUser.name}
                         signerRole="Requester / Contractor"
                         language={language}
+                        defaultMode={signPadMode}
                         onSave={dataUrl => {
                           setRequesterSignature(dataUrl);
                           setShowSignPad(false);
