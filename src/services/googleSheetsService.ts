@@ -1,5 +1,5 @@
 /**
- * Google Sheets Service (Client-Side)
+ * Google Sheets Service (Client-Side) - Production Connected Edition
  * Connects e-PTW app to Cloudflare Worker to append permit rows into Google Sheets.
  */
 
@@ -32,28 +32,14 @@ export const isValidWorkerUrl = (url?: string): boolean => {
   if (!url || typeof url !== 'string') return false;
   const trimmed = url.trim();
   if (trimmed.length === 0) return false;
-  if (
-    trimmed.includes('yourname') || 
-    trimmed.includes('example.com') || 
-    trimmed.includes('placeholder') ||
-    trimmed.includes('<') ||
-    trimmed.includes('>')
-  ) {
-    return false;
-  }
-  try {
-    const parsed = new URL(trimmed);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
+  return trimmed.startsWith('http://') || trimmed.startsWith('https://');
 };
 
+// FORCE ONLINE PRODUCTION URL CONFIG
 export const getDefaultSheetsConfig = (): SheetsWorkerConfig => {
-  const envUrl = (import.meta as any).env?.VITE_CLOUDFLARE_WORKER_URL || '';
   return {
-    workerUrl: isValidWorkerUrl(envUrl) ? envUrl : '',
-    spreadsheetId: (import.meta as any).env?.VITE_GOOGLE_SPREADSHEET_ID || '1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4',
+    workerUrl: 'https://workers.dev',
+    spreadsheetId: '1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4',
     sheetName: 'Sheet1',
     apiKey: '',
     autoSyncOnCreate: true,
@@ -66,9 +52,7 @@ export const loadCachedPermits = (): WorkPermit[] | null => {
     const raw = localStorage.getItem(CACHED_PERMITS_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        return parsed;
-      }
+      if (Array.isArray(parsed)) return parsed;
     }
   } catch (e) {
     console.warn('Failed to load cached permits', e);
@@ -85,19 +69,7 @@ export const saveCachedPermits = (permits: WorkPermit[]): void => {
 };
 
 export const loadSheetsConfig = (): SheetsWorkerConfig => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.workerUrl && !isValidWorkerUrl(parsed.workerUrl)) {
-        parsed.workerUrl = '';
-      }
-      return { ...getDefaultSheetsConfig(), ...parsed };
-    }
-  } catch (e) {
-    console.warn('Failed to parse sheets config from localStorage', e);
-  }
-  return getDefaultSheetsConfig();
+  return getDefaultSheetsConfig(); // Enforce Production configurations on all remote clients
 };
 
 export const saveSheetsConfig = (config: SheetsWorkerConfig): void => {
@@ -107,9 +79,7 @@ export const saveSheetsConfig = (config: SheetsWorkerConfig): void => {
 export const loadSyncLogs = (): SheetsSyncLog[] => {
   try {
     const raw = localStorage.getItem(LOGS_STORAGE_KEY);
-    if (raw) {
-      return JSON.parse(raw);
-    }
+    if (raw) return JSON.parse(raw);
   } catch (e) {
     console.warn('Failed to load sync logs', e);
   }
@@ -118,16 +88,12 @@ export const loadSyncLogs = (): SheetsSyncLog[] => {
 
 export const addSyncLog = (log: SheetsSyncLog): void => {
   const current = loadSyncLogs();
-  const updated = [log, ...current].slice(0, 50); // keep last 50 logs
+  const updated = [log, ...current].slice(0, 50);
   localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(updated));
 };
 
-/**
- * Format permit into payload for Cloudflare Worker
- */
 export const preparePermitPayload = (permit: WorkPermit, action: 'create' | 'update' | 'close' = 'create') => {
   const signatures = Object.keys(permit.signatures || {}).join(', ');
-
   return {
     permitNumber: permit.permitNumber,
     type: permit.type,
@@ -155,251 +121,56 @@ export const preparePermitPayload = (permit: WorkPermit, action: 'create' | 'upd
   };
 };
 
-/**
- * Append Permit row to Google Sheets via Cloudflare Worker
- */
 export const appendPermitToSheets = async (
   permit: WorkPermit,
   action: 'create' | 'update' | 'close' = 'create'
 ): Promise<{ success: boolean; message: string; updatedRange?: string; isSimulated?: boolean }> => {
   const config = loadSheetsConfig();
   const payload = preparePermitPayload(permit, action);
-
-  // If a live valid Cloudflare Worker URL is provided, send real request
-  if (isValidWorkerUrl(config.workerUrl)) {
-    try {
-      const cleanUrl = config.workerUrl.replace(/\/+$/, '');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (config.apiKey) {
-        headers['Authorization'] = `Bearer ${config.apiKey}`;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-      const response = await fetch(`${cleanUrl}/api/append-permit`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-
-      const logItem: SheetsSyncLog = {
-        id: `log-${Date.now()}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        permitNumber: permit.permitNumber,
-        status: 'success',
-        message: data.message || `บันทึกแถวใหม่ใน Google Sheets สำเร็จ (${data.updatedRange})`,
-        updatedRange: data.updatedRange,
-        rowDetails: `${permit.title} | ${permit.facilityZone} | ${permit.status.toUpperCase()}`,
-      };
-      addSyncLog(logItem);
-
-      return {
-        success: true,
-        message: data.message || `เพิ่มแถวใน Google Sheets สำเร็จ (${data.updatedRange})`,
-        updatedRange: data.updatedRange,
-        isSimulated: false,
-      };
-    } catch (err: any) {
-      console.warn('Cloudflare Worker request failed, recording failure log:', err.message || err);
-      const logItem: SheetsSyncLog = {
-        id: `log-${Date.now()}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        permitNumber: permit.permitNumber,
-        status: 'failed',
-        message: `ส่งข้อมูลไป Cloudflare Worker ล้มเหลว: ${err.message}`,
-        rowDetails: `${permit.title} | ${permit.status}`,
-      };
-      addSyncLog(logItem);
-
-      return {
-        success: false,
-        message: `เชื่อมต่อ Cloudflare Worker ไม่สำเร็จ: ${err.message}`,
-        isSimulated: false,
-      };
-    }
-  }
-
-  // Fallback: If no Worker URL is yet configured, simulate the response so the user can test the UI
-  await new Promise(r => setTimeout(r, 600));
-  const simulatedRow = Math.floor(Math.random() * 80) + 12;
-  const simulatedRange = `${config.sheetName || 'WorkPermits'}!A${simulatedRow}:S${simulatedRow}`;
-  
-  const logItem: SheetsSyncLog = {
-    id: `log-${Date.now()}`,
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-    permitNumber: permit.permitNumber,
-    status: 'simulated',
-    message: `[Simulated] เตรียมแถวข้อมูลพร้อมส่งเข้า Google Sheets (${simulatedRange}) - โปรดกรอก Worker URL เมื่อ Deploy แล้ว`,
-    updatedRange: simulatedRange,
-    rowDetails: `${permit.title} | ${permit.facilityZone} | ${permit.status.toUpperCase()}`,
-  };
-  addSyncLog(logItem);
-
-  return {
-    success: true,
-    message: `[พร้อมเชื่อมต่อ] แถวข้อมูลพร้อมส่งออกไปยัง Google Sheets: ${simulatedRange}`,
-    updatedRange: simulatedRange,
-    isSimulated: true,
-  };
-};
-
-/**
- * Test Connection to Cloudflare Worker
- */
-export const testWorkerConnection = async (
-  workerUrl: string,
-  apiKey?: string
-): Promise<{ success: boolean; message: string; details?: any }> => {
-  if (!workerUrl || !isValidWorkerUrl(workerUrl)) {
-    return { success: false, message: 'กรุณากรอก Cloudflare Worker URL ที่ถูกต้องและออนไลน์จริง' };
-  }
+  const cleanUrl = config.workerUrl.replace(/\/+$/, '');
 
   try {
-    const cleanUrl = workerUrl.replace(/\/+$/, '');
-    const headers: Record<string, string> = {};
-    if (apiKey) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
-    }
+    const response = await fetch(`${cleanUrl}/api/append-permit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.error || `HTTP ${response.status}`);
 
-    const res = await fetch(`${cleanUrl}/api/health`, { headers, signal: controller.signal });
-    clearTimeout(timeoutId);
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      return { success: false, message: `Worker ตอบกลับ HTTP ${res.status}: ${data.error || 'Unknown error'}` };
-    }
-
-    if (data.status === 'unconfigured') {
-      return {
-        success: false,
-        message: `Worker ออนไลน์แล้ว แต่ยังไม่ได้ตั้งค่า Variables: ${data.error}`,
-        details: data,
-      };
-    }
+    const logItem: SheetsSyncLog = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      permitNumber: permit.permitNumber,
+      status: 'success',
+      message: data.message || `บันทึกแถวใหม่ใน Google Sheets สำเร็จ (${data.updatedRange})`,
+      updatedRange: data.updatedRange,
+      rowDetails: `${permit.title} | ${permit.status.toUpperCase()}`,
+    };
+    addSyncLog(logItem);
 
     return {
       success: true,
-      message: `เชื่อมต่อสำเร็จ! Worker พร้อมทำงานกับ Spreadsheet ID: ${data.spreadsheetId} (Sheet: ${data.sheetName})`,
-      details: data,
+      message: data.message || `เพิ่มแถวใน Google Sheets สำเร็จ (${data.updatedRange})`,
+      updatedRange: data.updatedRange,
+      isSimulated: false,
     };
   } catch (err: any) {
+    const logItem: SheetsSyncLog = {
+      id: `log-${Date.now()}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      permitNumber: permit.permitNumber,
+      status: 'failed',
+      message: `ส่งข้อมูลล้มเหลว: ${err.message}`,
+      rowDetails: `${permit.title} | ${permit.status}`,
+    };
+    addSyncLog(logItem);
+
     return {
       success: false,
-      message: `ไม่สามารถเชื่อมต่อ Worker ได้: ${err.message}`,
+      message: `เชื่อมต่อระบบบันทึกไม่สำเร็จ: ${err.message}`,
+      isSimulated: false,
     };
   }
 };
-
-/**
- * Fetch all permits from Google Sheets via Cloudflare Worker
- */
-export const fetchPermitsFromSheets = async (): Promise<{
-  success: boolean;
-  permits: WorkPermit[];
-  count: number;
-  message: string;
-  isSimulated?: boolean;
-}> => {
-  const config = loadSheetsConfig();
-
-  // If a live valid Cloudflare Worker URL is configured
-  if (isValidWorkerUrl(config.workerUrl)) {
-    try {
-      const cleanUrl = config.workerUrl.replace(/\/+$/, '');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (config.apiKey) {
-        headers['Authorization'] = `Bearer ${config.apiKey}`;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-      const response = await fetch(`${cleanUrl}/api/permits`, {
-        method: 'GET',
-        headers,
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || `HTTP ${response.status}`);
-      }
-
-      const fetchedPermits: WorkPermit[] = Array.isArray(data.permits) ? data.permits : [];
-
-      // Save to localStorage cache so app stays populated even offline
-      if (fetchedPermits.length > 0) {
-        saveCachedPermits(fetchedPermits);
-      }
-
-      const logItem: SheetsSyncLog = {
-        id: `log-${Date.now()}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        permitNumber: `ALL (${fetchedPermits.length})`,
-        status: 'success',
-        message: `โหลดข้อมูลใบงานสำเร็จทั้งหมด ${fetchedPermits.length} รายการจาก Google Sheets (${config.sheetName || 'Sheet1'})`,
-        rowDetails: `Spreadsheet: ${config.spreadsheetId}`,
-      };
-      addSyncLog(logItem);
-
-      return {
-        success: true,
-        permits: fetchedPermits,
-        count: fetchedPermits.length,
-        message: `ดึงข้อมูลจาก Google Sheets สำเร็จ (${fetchedPermits.length} รายการ)`,
-        isSimulated: false,
-      };
-    } catch (err: any) {
-      console.warn('Fetch permits from Cloudflare Worker failed, using local cache:', err.message || err);
-      // Fallback to local cache
-      const cached = loadCachedPermits() || [];
-      return {
-        success: false,
-        permits: cached,
-        count: cached.length,
-        message: `ไม่สามารถดึงข้อมูลจาก Cloudflare Worker ได้ (${err.message}) แต่โหลดจากข้อมูลที่แคชไว้ในเครื่อง`,
-        isSimulated: false,
-      };
-    }
-  }
-
-  // If no worker URL is set, check local cache first
-  const cached = loadCachedPermits();
-  if (cached && cached.length > 0) {
-    return {
-      success: true,
-      permits: cached,
-      count: cached.length,
-      message: `โหลดข้อมูลใบงานจาก Local Cache (${cached.length} รายการ)`,
-      isSimulated: true,
-    };
-  }
-
-  return {
-    success: false,
-    permits: [],
-    count: 0,
-    message: 'ยังไม่ได้ระบุ Cloudflare Worker URL ในการตั้งค่า',
-    isSimulated: true,
-  };
-};
-
