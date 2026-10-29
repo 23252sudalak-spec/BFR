@@ -28,9 +28,31 @@ const STORAGE_KEY = 'eptw_cloudflare_sheets_config';
 const LOGS_STORAGE_KEY = 'eptw_sheets_sync_logs';
 const CACHED_PERMITS_KEY = 'eptw_cached_permits';
 
+export const isValidWorkerUrl = (url?: string): boolean => {
+  if (!url || typeof url !== 'string') return false;
+  const trimmed = url.trim();
+  if (trimmed.length === 0) return false;
+  if (
+    trimmed.includes('yourname') || 
+    trimmed.includes('example.com') || 
+    trimmed.includes('placeholder') ||
+    trimmed.includes('<') ||
+    trimmed.includes('>')
+  ) {
+    return false;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 export const getDefaultSheetsConfig = (): SheetsWorkerConfig => {
+  const envUrl = (import.meta as any).env?.VITE_CLOUDFLARE_WORKER_URL || '';
   return {
-    workerUrl: (import.meta as any).env?.VITE_CLOUDFLARE_WORKER_URL || '',
+    workerUrl: isValidWorkerUrl(envUrl) ? envUrl : '',
     spreadsheetId: (import.meta as any).env?.VITE_GOOGLE_SPREADSHEET_ID || '1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4',
     sheetName: 'Sheet1',
     apiKey: '',
@@ -49,7 +71,7 @@ export const loadCachedPermits = (): WorkPermit[] | null => {
       }
     }
   } catch (e) {
-    console.error('Failed to load cached permits', e);
+    console.warn('Failed to load cached permits', e);
   }
   return null;
 };
@@ -58,7 +80,7 @@ export const saveCachedPermits = (permits: WorkPermit[]): void => {
   try {
     localStorage.setItem(CACHED_PERMITS_KEY, JSON.stringify(permits));
   } catch (e) {
-    console.error('Failed to save permits cache', e);
+    console.warn('Failed to save permits cache', e);
   }
 };
 
@@ -66,10 +88,14 @@ export const loadSheetsConfig = (): SheetsWorkerConfig => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return { ...getDefaultSheetsConfig(), ...JSON.parse(raw) };
+      const parsed = JSON.parse(raw);
+      if (parsed.workerUrl && !isValidWorkerUrl(parsed.workerUrl)) {
+        parsed.workerUrl = '';
+      }
+      return { ...getDefaultSheetsConfig(), ...parsed };
     }
   } catch (e) {
-    console.error('Failed to parse sheets config from localStorage', e);
+    console.warn('Failed to parse sheets config from localStorage', e);
   }
   return getDefaultSheetsConfig();
 };
@@ -85,7 +111,7 @@ export const loadSyncLogs = (): SheetsSyncLog[] => {
       return JSON.parse(raw);
     }
   } catch (e) {
-    console.error('Failed to load sync logs', e);
+    console.warn('Failed to load sync logs', e);
   }
   return [];
 };
@@ -137,8 +163,8 @@ export const appendPermitToSheets = async (
   const config = loadSheetsConfig();
   const payload = preparePermitPayload(permit, action);
 
-  // If a live Cloudflare Worker URL is provided, send real request
-  if (config.workerUrl && config.workerUrl.trim().length > 0) {
+  // If a live valid Cloudflare Worker URL is provided, send real request
+  if (isValidWorkerUrl(config.workerUrl)) {
     try {
       const cleanUrl = config.workerUrl.replace(/\/+$/, '');
       const headers: Record<string, string> = {
@@ -148,11 +174,16 @@ export const appendPermitToSheets = async (
         headers['Authorization'] = `Bearer ${config.apiKey}`;
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
       const response = await fetch(`${cleanUrl}/api/append-permit`, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -178,7 +209,7 @@ export const appendPermitToSheets = async (
         isSimulated: false,
       };
     } catch (err: any) {
-      console.error('Cloudflare Worker request failed, recording failure log', err);
+      console.warn('Cloudflare Worker request failed, recording failure log:', err.message || err);
       const logItem: SheetsSyncLog = {
         id: `log-${Date.now()}`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -228,8 +259,8 @@ export const testWorkerConnection = async (
   workerUrl: string,
   apiKey?: string
 ): Promise<{ success: boolean; message: string; details?: any }> => {
-  if (!workerUrl) {
-    return { success: false, message: 'กรุณากรอก Cloudflare Worker URL' };
+  if (!workerUrl || !isValidWorkerUrl(workerUrl)) {
+    return { success: false, message: 'กรุณากรอก Cloudflare Worker URL ที่ถูกต้องและออนไลน์จริง' };
   }
 
   try {
@@ -239,7 +270,12 @@ export const testWorkerConnection = async (
       headers['Authorization'] = `Bearer ${apiKey}`;
     }
 
-    const res = await fetch(`${cleanUrl}/api/health`, { headers });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const res = await fetch(`${cleanUrl}/api/health`, { headers, signal: controller.signal });
+    clearTimeout(timeoutId);
+
     const data = await res.json();
 
     if (!res.ok) {
@@ -279,8 +315,8 @@ export const fetchPermitsFromSheets = async (): Promise<{
 }> => {
   const config = loadSheetsConfig();
 
-  // If a live Cloudflare Worker URL is configured
-  if (config.workerUrl && config.workerUrl.trim().length > 0) {
+  // If a live valid Cloudflare Worker URL is configured
+  if (isValidWorkerUrl(config.workerUrl)) {
     try {
       const cleanUrl = config.workerUrl.replace(/\/+$/, '');
       const headers: Record<string, string> = {
@@ -290,10 +326,15 @@ export const fetchPermitsFromSheets = async (): Promise<{
         headers['Authorization'] = `Bearer ${config.apiKey}`;
       }
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
       const response = await fetch(`${cleanUrl}/api/permits`, {
         method: 'GET',
         headers,
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
@@ -326,7 +367,7 @@ export const fetchPermitsFromSheets = async (): Promise<{
         isSimulated: false,
       };
     } catch (err: any) {
-      console.error('Fetch permits from Cloudflare Worker failed:', err);
+      console.warn('Fetch permits from Cloudflare Worker failed, using local cache:', err.message || err);
       // Fallback to local cache
       const cached = loadCachedPermits() || [];
       return {

@@ -724,7 +724,7 @@ export default function App() {
                       filteredPermits.map(permit => {
                         const Icon = permitTypeIcons[permit.type];
                         const typeInfo = t.permitTypes[permit.type];
-                        const sigCount = Object.keys(permit.signatures || {}).length;
+                        const sigCount = (permit.signatures?.requester ? 1 : 0) + (permit.signatures?.safetyOfficer ? 1 : 0);
 
                         return (
                           <tr 
@@ -784,7 +784,7 @@ export default function App() {
                             {/* Signatures */}
                             <td className="px-4 py-3.5 whitespace-nowrap font-mono text-[11px] text-slate-400">
                               <span className="text-sky-400 font-bold">{sigCount}</span>
-                              <span className="text-slate-600">/3</span>
+                              <span className="text-slate-600">/2</span>
                             </td>
 
                             {/* Actions */}

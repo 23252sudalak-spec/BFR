@@ -30,7 +30,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
   const t = translations[language];
 
   const [activeTab, setActiveTab] = useState<'details' | 'checklist' | 'jsa' | 'audits' | 'closure'>('details');
-  const [signatureRole, setSignatureRole] = useState<'safetyOfficer' | 'approver' | 'closure' | null>(null);
+  const [signatureRole, setSignatureRole] = useState<'safetyOfficer' | 'closure' | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [showRejectBox, setShowRejectBox] = useState(false);
   
@@ -49,10 +49,9 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
 
   // Role verification checks
   const canVerifyAsSO = currentUser.role === 'safety_officer' || currentUser.role === 'admin';
-  const canApproveAsOwner = currentUser.role === 'approver' || currentUser.role === 'admin';
   const isWorker = currentUser.role === 'worker';
 
-  // Handle Safety Officer Approval
+  // Handle Safety Officer Approval (Now directly approves & enables work!)
   const handleSignSO = (dataUrl: string) => {
     const updated: WorkPermit = {
       ...permit,
@@ -67,35 +66,11 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
           signerCompany: currentUser.company
         }
       },
-      status: permit.signatures.approver ? 'approved' : 'pending',
-      updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
-    };
-
-    const notif = `[${permit.permitNumber}] จป.วิชาชีพ (${currentUser.name}) ตรวจสอบและลงนามอนุมัติด้านความปลอดภัยแล้ว`;
-    onUpdatePermit(updated, notif);
-    setSignatureRole(null);
-  };
-
-  // Handle Area Owner Approval
-  const handleSignApprover = (dataUrl: string) => {
-    const updated: WorkPermit = {
-      ...permit,
-      approver: currentUser,
-      signatures: {
-        ...permit.signatures,
-        approver: {
-          role: 'Area Owner / Issuer',
-          signerName: currentUser.name,
-          signatureDataUrl: dataUrl,
-          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
-          signerCompany: currentUser.company
-        }
-      },
       status: 'approved',
       updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 16)
     };
 
-    const notif = `[${permit.permitNumber}] เจ้าของพื้นที่ (${currentUser.name}) อนุมัติเปิดหน้างานแล้ว (Approved - Ready to Work)`;
+    const notif = `[${permit.permitNumber}] จป.วิชาชีพ (${currentUser.name}) ตรวจสอบและลงนามอนุมัติเรียบร้อยแล้ว (Approved - พร้อมปฏิบัติงานทันที)`;
     onUpdatePermit(updated, notif);
     setSignatureRole(null);
   };
@@ -310,16 +285,6 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                   </button>
                 )}
 
-                {canApproveAsOwner && !permit.signatures.approver && (
-                  <button
-                    onClick={() => setSignatureRole('approver')}
-                    className="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>{t.detail.btnOwnerApprove}</span>
-                  </button>
-                )}
-
                 <button
                   onClick={() => setShowRejectBox(true)}
                   className="px-2.5 py-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
@@ -485,16 +450,22 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                 </div>
               )}
 
-              {/* Digital Signatures Matrix */}
+              {/* Digital Signatures Matrix - 2 Steps: Requester & Safety Officer */}
               <div className="space-y-3">
-                <span className="text-xs font-semibold text-slate-300">{t.detail.sigMatrixTitle}</span>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Requester */}
-                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300">{t.detail.sigMatrixTitle}</span>
+                  <span className="text-[11px] text-slate-400 font-mono">2-Step Approval Chain</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* กล่องที่ 1: ผู้ขออนุญาต / ผู้รับเหมา (ลงนามขอเปิดงาน) */}
+                  <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3 flex flex-col justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">1. {t.detail.roleRequester}</span>
-                      <div className="font-semibold text-slate-200 mt-0.5">{permit.signatures.requester?.signerName || permit.requester?.name || 'Applicant'}</div>
-                      <span className="text-[10px] text-slate-500">{permit.contractorCompany}</span>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-slate-400 uppercase font-semibold">1. ผู้ขออนุญาต / ผู้รับเหมา (ลงนามขอเปิดงาน)</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-400 font-mono">Step 1</span>
+                      </div>
+                      <div className="font-bold text-slate-200 mt-1 text-sm">{permit.signatures.requester?.signerName || permit.requester?.name || 'Applicant'}</div>
+                      <span className="text-xs text-slate-400">{permit.contractorCompany}</span>
                     </div>
                     {permit.signatures.requester ? (
                       <div className="pt-2 border-t border-slate-800/80">
@@ -506,20 +477,23 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                         <span className="text-[10px] text-slate-500 font-mono block mt-1">{permit.signatures.requester.timestamp}</span>
                       </div>
                     ) : (
-                      <div className="h-10 flex items-center justify-center text-[11px] text-slate-600 border border-dashed border-slate-800 rounded">
+                      <div className="h-12 flex items-center justify-center text-xs text-slate-600 border border-dashed border-slate-800 rounded-lg">
                         {t.detail.sigNotSigned}
                       </div>
                     )}
                   </div>
 
-                  {/* Safety Officer */}
-                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 flex flex-col justify-between">
+                  {/* กล่องที่ 2: จป.วิชาชีพ ตรวจสอบและอนุมัติ */}
+                  <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3 flex flex-col justify-between">
                     <div>
-                      <span className="text-[10px] text-emerald-400 uppercase font-semibold">2. {t.detail.roleSafetyOfficer}</span>
-                      <div className="font-semibold text-slate-200 mt-0.5">
-                        {permit.signatures.safetyOfficer?.signerName || (canVerifyAsSO ? `待 ${t.detail.roleSafetyOfficer}` : t.detail.sigNotSigned)}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] text-emerald-400 uppercase font-semibold">2. จป.วิชาชีพ ตรวจสอบและอนุมัติ</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono">Final Approval</span>
                       </div>
-                      <span className="text-[10px] text-slate-500">Apex Safety Division</span>
+                      <div className="font-bold text-slate-200 mt-1 text-sm">
+                        {permit.signatures.safetyOfficer?.signerName || (canVerifyAsSO ? `รอ จป.วิชาชีพ ลงนามอนุมัติ` : t.detail.sigNotSigned)}
+                      </div>
+                      <span className="text-xs text-slate-400">Apex Safety & EHS Division</span>
                     </div>
                     {permit.signatures.safetyOfficer ? (
                       <div className="pt-2 border-t border-slate-800/80">
@@ -535,48 +509,13 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                         {canVerifyAsSO && permit.status === 'pending' ? (
                           <button
                             onClick={() => setSignatureRole('safetyOfficer')}
-                            className="w-full py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded font-semibold text-xs transition-colors cursor-pointer"
+                            className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-lg text-xs transition-colors cursor-pointer shadow-md shadow-emerald-500/10 flex items-center justify-center gap-1.5"
                           >
-                            {t.detail.btnSignNow}
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>{t.detail.btnSoApprove}</span>
                           </button>
                         ) : (
-                          <div className="h-10 flex items-center justify-center text-[11px] text-slate-600 border border-dashed border-slate-800 rounded">
-                            {t.detail.sigNotSigned}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Area Owner */}
-                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 flex flex-col justify-between">
-                    <div>
-                      <span className="text-[10px] text-sky-400 uppercase font-semibold">3. {t.detail.roleAreaOwner}</span>
-                      <div className="font-semibold text-slate-200 mt-0.5">
-                        {permit.signatures.approver?.signerName || (canApproveAsOwner ? `待 ${t.detail.roleAreaOwner}` : t.detail.sigNotSigned)}
-                      </div>
-                      <span className="text-[10px] text-slate-500">Plant Operations Dept.</span>
-                    </div>
-                    {permit.signatures.approver ? (
-                      <div className="pt-2 border-t border-slate-800/80">
-                        <img 
-                          src={permit.signatures.approver.signatureDataUrl} 
-                          alt="Signature" 
-                          className="h-10 object-contain invert opacity-80" 
-                        />
-                        <span className="text-[10px] text-slate-500 font-mono block mt-1">{permit.signatures.approver.timestamp}</span>
-                      </div>
-                    ) : (
-                      <div>
-                        {canApproveAsOwner && permit.status === 'pending' ? (
-                          <button
-                            onClick={() => setSignatureRole('approver')}
-                            className="w-full py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded font-semibold text-xs transition-colors cursor-pointer"
-                          >
-                            {t.detail.btnSignNow}
-                          </button>
-                        ) : (
-                          <div className="h-10 flex items-center justify-center text-[11px] text-slate-600 border border-dashed border-slate-800 rounded">
+                          <div className="h-12 flex items-center justify-center text-xs text-slate-600 border border-dashed border-slate-800 rounded-lg">
                             {t.detail.sigNotSigned}
                           </div>
                         )}
@@ -882,17 +821,17 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
             </div>
           )}
 
-          {/* Signature Pad overlay for SO or Approver */}
-          {(signatureRole === 'safetyOfficer' || signatureRole === 'approver') && (
-            <div className="p-4 bg-slate-950 border border-sky-500/40 rounded-2xl space-y-3">
-              <span className="text-xs font-bold text-sky-400">
-                {signatureRole === 'safetyOfficer' ? 'ลงนามอนุมัติโดย จป.วิชาชีพ' : 'ลงนามอนุมัติโดย เจ้าของพื้นที่ (Issuer)'}
+          {/* Signature Pad overlay for SO Final Approval */}
+          {signatureRole === 'safetyOfficer' && (
+            <div className="p-4 bg-slate-950 border border-emerald-500/40 rounded-2xl space-y-3">
+              <span className="text-xs font-bold text-emerald-400">
+                ลงนามตรวจสอบและอนุมัติโดย จป.วิชาชีพ (Safety Officer Final Approval)
               </span>
               <DigitalSignaturePad
                 signerName={currentUser.name}
-                signerRole={signatureRole === 'safetyOfficer' ? 'Safety Officer (จป.วิชาชีพ)' : 'Area Owner / Issuer'}
+                signerRole="Safety Officer (จป.วิชาชีพ)"
                 language={language}
-                onSave={signatureRole === 'safetyOfficer' ? handleSignSO : handleSignApprover}
+                onSave={handleSignSO}
                 onCancel={() => setSignatureRole(null)}
               />
             </div>
