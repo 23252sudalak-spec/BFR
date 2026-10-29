@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { 
   X, Flame, ShieldAlert, Zap, AlertTriangle, 
-  Layers, HardHat, FileText, Plus, Trash2, 
-  UploadCloud, CheckCircle2, Info, Building
+  Layers, HardHat, CheckCircle2, Info, Building
 } from 'lucide-react';
 import { 
   Language, PermitType, User, WorkPermit, 
-  ChecklistItem, JSAItem, Worker 
+  ChecklistItem 
 } from '../types/permit';
 import { translations } from '../i18n/translations';
 import { DigitalSignaturePad } from './DigitalSignaturePad';
@@ -86,29 +85,6 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
     }))
   );
 
-  // Workers
-  const [workers, setWorkers] = useState<Worker[]>([]);
-  const [newWorkerName, setNewWorkerName] = useState('');
-  const [newWorkerId, setNewWorkerId] = useState('');
-  const [newWorkerRole, setNewWorkerRole] = useState('');
-  const [newWorkerCertified, setNewWorkerCertified] = useState(true);
-
-  // JSA Items
-  const [jsaItems, setJsaItems] = useState<JSAItem[]>([
-    {
-      id: 'jsa-step-1',
-      step: 'เตรียมพื้นที่และตัดแยกระบบพลังงาน (Preparation & Isolation)',
-      hazard: 'อันตรายจากพลังงานตกค้าง หรือวัตถุไวไฟในรัศมี',
-      controlMeasure: 'ตรวจสอบ LOTO และเคลียร์วัสดุติดไฟในรัศมี 10 เมตร'
-    }
-  ]);
-  const [newStep, setNewStep] = useState('');
-  const [newHazard, setNewHazard] = useState('');
-  const [newControl, setNewControl] = useState('');
-
-  // JSA Upload Simulator
-  const [uploadedFileName, setUploadedFileName] = useState<string>('JSA-Risk-Assessment-Approved.pdf');
-
   // Requester Signature
   const [requesterSignature, setRequesterSignature] = useState<string | null>(null);
   const [showSignPad, setShowSignPad] = useState(false);
@@ -139,65 +115,8 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
     );
   };
 
-  const handleAddWorker = () => {
-    if (!newWorkerName.trim()) return;
-    setWorkers(prev => [
-      ...prev,
-      {
-        id: `w-${Date.now()}`,
-        name: newWorkerName.trim(),
-        nationalId: newWorkerId.trim() || `ID-${Math.floor(100000 + Math.random() * 900000)}`,
-        company: contractorCompany,
-        role: newWorkerRole.trim() || 'ผู้ปฏิบัติงาน (Worker)',
-        certified: newWorkerCertified,
-        acknowledged: false
-      }
-    ]);
-    setNewWorkerName('');
-    setNewWorkerId('');
-    setNewWorkerRole('');
-  };
-
-  const removeWorker = (id: string) => {
-    setWorkers(prev => prev.filter(w => w.id !== id));
-  };
-
-  const handleAddJsaStep = () => {
-    if (!newStep.trim() || !newHazard.trim()) return;
-    setJsaItems(prev => [
-      ...prev,
-      {
-        id: `jsa-${Date.now()}`,
-        step: newStep,
-        hazard: newHazard,
-        controlMeasure: newControl
-      }
-    ]);
-    setNewStep('');
-    setNewHazard('');
-    setNewControl('');
-  };
-
-  const removeJsaStep = (id: string) => {
-    setJsaItems(prev => prev.filter(j => j.id !== id));
-  };
-
   const handleSubmit = (asDraft: boolean = false) => {
     const permitNumber = `PTW-2026-1026-${Math.floor(100 + Math.random() * 900)}`;
-    
-    // Auto-append worker if user typed without clicking '+'
-    const submittedWorkers = [...workers];
-    if (newWorkerName.trim()) {
-      submittedWorkers.push({
-        id: `w-${Date.now()}`,
-        name: newWorkerName.trim(),
-        nationalId: newWorkerId.trim() || `ID-${Math.floor(100000 + Math.random() * 900000)}`,
-        company: contractorCompany,
-        role: newWorkerRole.trim() || 'ผู้ปฏิบัติงาน (Worker)',
-        certified: newWorkerCertified,
-        acknowledged: false
-      });
-    }
 
     const newPermit: WorkPermit = {
       id: `ptw-${Date.now()}`,
@@ -216,9 +135,8 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
       riskLevel: selectedType === 'confined_space' ? 'critical' : 'high',
       ppeList: selectedPPE,
       checklist,
-      jsaItems,
-      jsaDocumentName: uploadedFileName,
-      workers: submittedWorkers,
+      jsaItems: [],
+      workers: [],
       signatures: {
         requester: requesterSignature ? {
           role: 'Requester / Contractor',
@@ -258,7 +176,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/90">
           <div>
             <h2 className="text-base font-bold text-slate-100">{t.form.title}</h2>
-            <p className="text-xs text-slate-400">Step {activeStep} of 4 · ISO 45001 High-Risk Safety Control</p>
+            <p className="text-xs text-slate-400">Step {activeStep} of 3 · ISO 45001 High-Risk Safety Control</p>
           </div>
           <button
             onClick={onClose}
@@ -269,7 +187,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
         </div>
 
         {/* Step Indicator Tabs */}
-        <div className="grid grid-cols-4 border-b border-slate-800 bg-slate-950/40 text-xs font-medium">
+        <div className="grid grid-cols-3 border-b border-slate-800 bg-slate-950/40 text-xs font-medium">
           <button
             onClick={() => setActiveStep(1)}
             className={`py-3 px-4 text-center border-b-2 transition-all cursor-pointer ${
@@ -298,17 +216,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            3. {t.form.jsaTitle} & {t.form.workersTitle}
-          </button>
-          <button
-            onClick={() => setActiveStep(4)}
-            className={`py-3 px-4 text-center border-b-2 transition-all cursor-pointer ${
-              activeStep === 4 
-                ? 'border-sky-500 text-sky-400 bg-sky-500/5 font-semibold' 
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            4. {t.form.digitalSign}
+            3. {t.form.digitalSign}
           </button>
         </div>
 
@@ -542,209 +450,8 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
             </div>
           )}
 
-          {/* STEP 3: Workers & JSA */}
+          {/* STEP 3: Digital Signature */}
           {activeStep === 3 && (
-            <div className="space-y-6">
-              {/* Workers Management */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  {t.form.workerSectionTitle}
-                </label>
-                
-                <div className="space-y-2 mb-3">
-                  {workers.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 border border-dashed border-slate-800 rounded-xl bg-slate-950/40 text-xs">
-                      {t.form.workerCertCheck}
-                    </div>
-                  ) : (
-                    workers.map((w, index) => (
-                      <div key={w.id} className="flex items-center justify-between p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-xs">
-                        <div className="flex items-center gap-3">
-                          <span className="text-slate-500 font-mono">{index + 1}.</span>
-                          <div>
-                            <span className="font-semibold text-slate-200">{w.name}</span>
-                            <span className="text-slate-400 ml-2">({w.role})</span>
-                            <span className="text-slate-500 ml-2 font-mono">ID: {w.nationalId}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {w.certified && (
-                            <span className="text-[11px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
-                              Certified
-                            </span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeWorker(w.id)}
-                            className="text-slate-500 hover:text-rose-400 transition-colors p-1 cursor-pointer"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2.5">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">{t.form.workerNameLabel} <span className="text-rose-400">*</span></label>
-                      <input
-                        type="text"
-                        value={newWorkerName}
-                        onChange={e => setNewWorkerName(e.target.value)}
-                        placeholder={t.form.workerName}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">{t.form.workerIdLabel}</label>
-                      <input
-                        type="text"
-                        value={newWorkerId}
-                        onChange={e => setNewWorkerId(e.target.value)}
-                        placeholder={t.form.workerId}
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">{t.form.workerRoleLabel}</label>
-                      <input
-                        type="text"
-                        value={newWorkerRole}
-                        onChange={e => setNewWorkerRole(e.target.value)}
-                        placeholder="Rigger, Welder, Fire Watch..."
-                        className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-                    <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-300">
-                      <input
-                        type="checkbox"
-                        checked={newWorkerCertified}
-                        onChange={e => setNewWorkerCertified(e.target.checked)}
-                        className="w-4 h-4 rounded text-sky-500"
-                      />
-                      <span>{t.form.workerCertCheck}</span>
-                    </label>
-
-                    <button
-                      type="button"
-                      onClick={handleAddWorker}
-                      className="flex items-center justify-center gap-1.5 px-4 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 rounded-lg text-xs font-bold cursor-pointer transition-colors shadow-sm"
-                    >
-                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>{t.form.addWorker}</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* JSA Step breakdown */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-2">
-                  {t.form.jsaTitle}
-                </label>
-
-                <div className="space-y-2 mb-3">
-                  {jsaItems.map((jsa, i) => (
-                    <div key={jsa.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg text-xs space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sky-400">{t.form.addStep} {i + 1}: {jsa.step}</span>
-                        {jsaItems.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeJsaStep(jsa.id)}
-                            className="text-slate-500 hover:text-rose-400"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300 pt-1">
-                        <div>
-                          <span className="text-slate-500 font-medium">{t.form.hazard}: </span>
-                          <span>{jsa.hazard}</span>
-                        </div>
-                        <div>
-                          <span className="text-emerald-400 font-medium">{t.form.controlMeasure}: </span>
-                          <span>{jsa.controlMeasure}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="p-3 bg-slate-950/40 border border-slate-800 rounded-xl space-y-2">
-                  <input
-                    type="text"
-                    value={newStep}
-                    onChange={e => setNewStep(e.target.value)}
-                    placeholder={t.form.stepWork}
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500"
-                  />
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      value={newHazard}
-                      onChange={e => setNewHazard(e.target.value)}
-                      placeholder={t.form.hazard}
-                      className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500"
-                    />
-                    <input
-                      type="text"
-                      value={newControl}
-                      onChange={e => setNewControl(e.target.value)}
-                      placeholder={t.form.controlMeasure}
-                      className="px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-xs text-slate-100 placeholder-slate-500"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddJsaStep}
-                    className="flex items-center gap-1.5 px-3 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>{t.form.addStep}</span>
-                  </button>
-                </div>
-
-                {/* Upload JSA Simulator */}
-                <div className="mt-4 p-4 border border-dashed border-slate-700 rounded-xl bg-slate-950/30 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20">
-                      <UploadCloud className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-semibold text-slate-200">{t.form.uploadJsa}</span>
-                      <p className="text-[11px] text-slate-400">{t.form.uploadHint}</p>
-                      {uploadedFileName && (
-                        <span className="inline-flex items-center gap-1 mt-1 text-[11px] text-emerald-400 font-mono">
-                          <FileText className="w-3 h-3" /> {uploadedFileName} (Ready)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setUploadedFileName(`JSA-${selectedType.toUpperCase()}-${Math.floor(100+Math.random()*900)}.pdf`);
-                    }}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-medium cursor-pointer"
-                  >
-                    {t.form.btnSimulateUpload}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 4: Digital Signature */}
-          {activeStep === 4 && (
             <div className="space-y-6">
               <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
@@ -809,10 +516,10 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     <span className="text-slate-500">{t.dashboard.tableRiskType}:</span> <span className="text-slate-200">{t.permitTypes[selectedType].title}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">{t.form.facilityZone}:</span> <span className="text-slate-200">{facilityZone}</span>
+                    <span className="text-slate-500">{t.form.facilityZone}:</span> <span className="text-slate-200">{facilityZone || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-slate-500">{t.form.workersTitle}:</span> <span className="text-slate-200">{workers.length}</span>
+                    <span className="text-slate-500">{t.form.contractorCompany}:</span> <span className="text-slate-200 truncate">{contractorCompany}</span>
                   </div>
                   <div>
                     <span className="text-slate-500">{t.dashboard.tableStatus}:</span> <span className="text-amber-400 font-medium">Pending Review</span>
@@ -845,7 +552,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {activeStep < 4 ? (
+            {activeStep < 3 ? (
               <button
                 type="button"
                 onClick={() => setActiveStep(prev => prev + 1)}

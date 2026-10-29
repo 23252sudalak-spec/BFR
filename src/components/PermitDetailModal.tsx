@@ -355,7 +355,7 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               activeTab === 'jsa' ? 'border-sky-500 text-sky-400 font-semibold' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            {t.detail.tabJsa} ({permit.workers.length})
+            {t.detail.tabJsa} ({(permit.workers || []).length})
           </button>
           <button
             onClick={() => setActiveTab('audits')}
@@ -644,39 +644,45 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-semibold text-slate-300">
-                    {t.detail.workersTitle} ({permit.workers.length})
+                    {t.detail.workersTitle} ({(permit.workers || []).length})
                   </span>
                   <span className="text-[11px] text-slate-400">{t.form.workerCertCheck}</span>
                 </div>
 
                 <div className="space-y-2">
-                  {permit.workers.map((w, idx) => (
-                    <div key={w.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-slate-500 font-mono">{idx + 1}.</span>
-                        <div>
-                          <div className="font-semibold text-slate-200">{w.name}</div>
-                          <div className="text-[11px] text-slate-400">{w.role} · ID: {w.nationalId} ({w.company})</div>
+                  {(!permit.workers || permit.workers.length === 0) ? (
+                    <div className="p-4 text-center text-slate-500 bg-slate-950/40 border border-slate-800 rounded-lg text-xs">
+                      {language === 'th' ? 'ไม่มีข้อมูลรายชื่อผู้ปฏิบัติงานในใบอนุญาตนี้' : language === 'zh' ? '该许可证无作业人员登记' : 'No worker records registered for this permit'}
+                    </div>
+                  ) : (
+                    permit.workers.map((w, idx) => (
+                      <div key={w.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-slate-500 font-mono">{idx + 1}.</span>
+                          <div>
+                            <div className="font-semibold text-slate-200">{w.name}</div>
+                            <div className="text-[11px] text-slate-400">{w.role} · ID: {w.nationalId} ({w.company})</div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          {w.acknowledged ? (
+                            <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>{t.detail.toolboxSigned} ({w.acknowledgedAt?.split(' ')[1] || '08:20'})</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleWorkerAcknowledge(w.id)}
+                              className="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded text-xs transition-colors cursor-pointer"
+                            >
+                              {t.detail.btnSignToolbox}
+                            </button>
+                          )}
                         </div>
                       </div>
-
-                      <div className="flex items-center gap-3">
-                        {w.acknowledged ? (
-                          <div className="flex items-center gap-1.5 text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>{t.detail.toolboxSigned} ({w.acknowledgedAt?.split(' ')[1] || '08:20'})</span>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => handleWorkerAcknowledge(w.id)}
-                            className="px-2.5 py-1 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/30 rounded text-xs transition-colors cursor-pointer"
-                          >
-                            {t.detail.btnSignToolbox}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
@@ -694,21 +700,27 @@ export const PermitDetailModal: React.FC<PermitDetailModalProps> = ({
                 </div>
 
                 <div className="space-y-2">
-                  {permit.jsaItems.map((jsa, i) => (
-                    <div key={jsa.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-1">
-                      <div className="font-semibold text-sky-400">{t.form.addStep} {i + 1}: {jsa.step}</div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300 pt-1">
-                        <div>
-                          <span className="text-slate-500 font-medium">{t.form.hazard}: </span>
-                          <span>{jsa.hazard}</span>
-                        </div>
-                        <div>
-                          <span className="text-emerald-400 font-medium">{t.form.controlMeasure}: </span>
-                          <span>{jsa.controlMeasure}</span>
+                  {(!permit.jsaItems || permit.jsaItems.length === 0) ? (
+                    <div className="p-4 text-center text-slate-500 bg-slate-950/40 border border-slate-800 rounded-lg text-xs">
+                      {language === 'th' ? 'ไม่มีขั้นตอนการประเมินความเสี่ยง JSA ในใบอนุญาตนี้' : language === 'zh' ? '该许可证无JSA安全分析步骤' : 'No JSA hazard analysis steps registered for this permit'}
+                    </div>
+                  ) : (
+                    permit.jsaItems.map((jsa, i) => (
+                      <div key={jsa.id} className="p-3 bg-slate-950 border border-slate-800 rounded-lg space-y-1">
+                        <div className="font-semibold text-sky-400">{t.form.addStep} {i + 1}: {jsa.step}</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300 pt-1">
+                          <div>
+                            <span className="text-slate-500 font-medium">{t.form.hazard}: </span>
+                            <span>{jsa.hazard}</span>
+                          </div>
+                          <div>
+                            <span className="text-emerald-400 font-medium">{t.form.controlMeasure}: </span>
+                            <span>{jsa.controlMeasure}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
