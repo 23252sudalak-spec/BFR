@@ -1,7 +1,7 @@
 import { WorkPermit } from '../types/permit';
 
-// ดึงลิงก์ตรงจากไฟล์ .env ที่เราเซฟไว้
-const GOOGLE_WEBAPP_URL = import.meta.env.VITE_CLOUDFLARE_WORKER || "";
+// ใส่ลิงก์ Google Web App ของคุณตรงๆ เพื่อแก้ปัญหา Cloudflare Static Assets ไม่อ่านค่า .env
+const GOOGLE_WEBAPP_URL = "https://google.com";
 
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) {
@@ -64,11 +64,9 @@ export const isValidWorkerUrl = (url: string): boolean => {
 export const testWorkerConnection = async (url: string): Promise<{ success: boolean; message: string }> => {
   if (!url) return { success: false, message: "URL ว่างเปล่า" };
   try {
-    // ส่งคำขอแบบ GET ไปเช็คการตอบรับเบื้องต้น
     const response = await fetch(url, { method: 'GET' });
     return { success: true, message: "เชื่อมต่อสำเร็จ" };
   } catch (err) {
-    // รองรับกรณีติด No-CORS แต่ตัวเซิร์ฟเวอร์มีอยู่จริง
     return { success: true, message: "ส่งคำขอทดสอบสำเร็จ (ตรวจสอบการตั้งค่า CORS บน Web App เพิ่มเติมหากข้อมูลไม่เข้า)" };
   }
 };
