@@ -1,79 +1,91 @@
 import { WorkPermit } from '../types/permit';
 
-// ใส่ลิงก์ Google Web App ของคุณตรงๆ เพื่อแก้ปัญหา Cloudflare Static Assets ไม่อ่านค่า .env
-const GOOGLE_WEBAPP_URL = "https://google.com";
+// ดึงค่า URL และ Spreadsheet ID จากไฟล์ .env ที่ถูกต้องตามสถาปัตยกรรมของแอป
+const WORKER_URL = import.meta.env.VITE_CLOUDFLARE_WORKER_URL || "";
+const SPREADSHEET_ID = import.meta.env.VITE_GOOGLE_SPREADSHEET_ID || "";
 
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
-  if (!GOOGLE_WEBAPP_URL) {
-    console.warn("ยังไม่ได้ใส่ลิงก์ Google Web App ในไฟล์ .env");
+  if (!WORKER_URL) {
+    console.warn("ยังไม่ได้ตั้งค่า VITE_CLOUDFLARE_WORKER_URL ในไฟล์ .env");
     return { success: true, isSimulated: true };
   }
 
   try {
-    // ยิงข้อมูลตรงข้ามเครื่องเข้า Google Sheets ทันที ไม่ผ่าน Cloudflare
-    const response = await fetch(GOOGLE_WEBAPP_URL, {
+    // ยิงเข้าหา Endpoint /api/append-permit บน Cloudflare Worker หลังบ้านที่รองรับ CORS สมบูรณ์
+    const response = await fetch(`${WORKER_URL}/api/append-permit`, {
       method: 'POST',
-      mode: 'no-cors', // ปลดล็อกปัญหา CORS บล็อกเครื่องคนอื่น
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         permitNumber: permit.permitNumber || '',
         type: permit.type || '',
-        riskLevel: permit.riskLevel || '',
+        riskLevel: permit.riskLevel || 'High',
         title: permit.title || '',
         facilityZone: permit.facilityZone || '',
         location: permit.location || '',
         contractorCompany: permit.contractorCompany || '',
         startDate: permit.startDate || '',
-        status: permit.status || 'Approved',
+        startTime: permit.startTime || '08:30',
+        endDate: permit.endDate || '',
+        endTime: permit.endTime || '17:30',
+        status: permit.status || 'PENDING',
         action
       }),
     });
 
-    return { success: true, isSimulated: false };
-  } catch (err) {
-    return { success: true, isSimulated: true };
+    if (!response.ok) throw new Error("Worker respond failed");
+    return await response.json();
+  } catch (err: any) {
+    console.error("Error appending to sheets:", err);
+    return { success: false, message: err.message };
   }
 };
 
-// 1. เพิ่มฟังก์ชันดึงข้อมูลจาก Sheets (ป้องกัน Error ใน App.tsx และ DriveSyncModal.tsx)
-export const fetchPermitsFromSheets = async (): Promise<any[]> => {
-  if (!GOOGLE_WEBAPP_URL) return [];
+export const fetchPermitsFromSheets = async (): Promise<any> => {
+  if (!WORKER_URL) return { success: false, permits: [] };
   try {
-    const response = await fetch(`${GOOGLE_WEBAPP_URL}?action=fetch`);
-    if (!response.ok) return [];
-    const data = await response.json();
-    return Array.isArray(data) ? data : [];
+    // ดึงข้อมูลรวมทั้งหมดจาก Google Sheets ผ่าน Worker (Endpoint: /api/permits)
+    const response = await fetch(`${WORKER_URL}/api/permits`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    if (!response.ok) return { success: false, permits: [] };
+    return await response.json();
   } catch (err) {
-    console.error("Error fetching from sheets:", err);
-    return [];
+    console.error("Error fetching from worker:", err);
+    return { success: false, permits: [] };
   }
 };
 
-// 2. เพิ่มฟังก์ชันตรวจสอบความถูกต้องของ URL (ป้องกัน Error ใน App.tsx)
 export const isValidWorkerUrl = (url: string): boolean => {
   if (!url) return false;
   try {
     new URL(url);
     return url.startsWith('http://') || url.startsWith('https://');
-  } catch (_) {
+  } catch (_) { netizens
     return false;
   }
 };
 
-// 3. เพิ่มฟังก์ชันทดสอบการเชื่อมต่อกับ Google Web App / Worker (ป้องกัน Error ใน DriveSyncModal.tsx)
-export const testWorkerConnection = async (url: string): Promise<{ success: boolean; message: string }> => {
+export const testWorkerConnection = async (url: string, apiKey?: string): Promise<{ success: boolean; message: string }> => {
   if (!url) return { success: false, message: "URL ว่างเปล่า" };
   try {
-    const response = await fetch(url, { method: 'GET' });
-    return { success: true, message: "เชื่อมต่อสำเร็จ" };
+    const response = await fetch(`${url}/api/health`, { method: 'GET' });
+    if (response.ok) return { success: true, message: "เชื่อมต่อกับ Cloudflare Worker Backend สำเร็จ!" };
+    return { success: false, message: "Worker ตอบรับแต่พบข้อผิดพลาดบนเซิร์ฟเวอร์" };
   } catch (err) {
-    return { success: true, message: "ส่งคำขอทดสอบสำเร็จ (ตรวจสอบการตั้งค่า CORS บน Web App เพิ่มเติมหากข้อมูลไม่เข้า)" };
+    return { success: false, message: "ไม่สามารถเชื่อมต่อกับ Worker ได้ ตรวจสอบ URL อีกครั้ง" };
   }
 };
 
-// คงฟังก์ชันมาตรฐานไว้ไม่ให้ไฟล์อื่นพัง
-export const getDefaultSheetsConfig = () => ({ workerUrl: GOOGLE_WEBAPP_URL, spreadsheetId: '', sheetName: 'Sheet1', apiKey: '', autoSyncOnCreate: true, autoSyncOnStatusChange: true });
-export const loadSheetsConfig = () => getDefaultSheetsConfig();
+export const loadSheetsConfig = () => ({
+  workerUrl: WORKER_URL,
+  spreadsheetId: SPREADSHEET_ID,
+  sheetName: 'Sheet1',
+  apiKey: '',
+  autoSyncOnCreate: true,
+  autoSyncOnStatusChange: true
+});
+
 export const saveSheetsConfig = () => {};
 export const loadCachedPermits = () => null;
 export const saveCachedPermits = () => {};
