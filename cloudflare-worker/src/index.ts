@@ -418,27 +418,30 @@ function parseSheetRowsToPermits(rows: string[][]): any[] {
   return Array.from(permitsMap.values()).reverse();
 }
 
-// Prepare CORS Response Headers
-function corsHeaders(env: Env): HeadersInit {
+// Prepare CORS Response Headers - Allow all devices, origins, and standard HTTP methods
+function corsHeaders(env?: Env): Record<string, string> {
   return {
-    'Access-Control-Allow-Origin': env.ALLOWED_ORIGIN || '*',
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Api-Key',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Api-Key, Accept, Origin, X-Requested-With',
+    'Access-Control-Max-Age': '86400',
   };
 }
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    const url = new URL(request.url);
     const originHeaders = corsHeaders(env);
 
-    // 1. Handle CORS Preflight
+    // 1. Handle CORS Preflight for all endpoints
     if (request.method === 'OPTIONS') {
       return new Response(null, {
         status: 204,
         headers: originHeaders,
       });
     }
+
+    try {
+      const url = new URL(request.url);
 
     // 2. Health check & configuration status (GET / or GET /api/health)
     if (request.method === 'GET' && (url.pathname === '/' || url.pathname === '/api/health')) {
@@ -707,5 +710,17 @@ export default {
         headers: { ...originHeaders, 'Content-Type': 'application/json' },
       }
     );
+    } catch (fatalErr: any) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `Worker Fatal Error: ${fatalErr?.message || fatalErr}`,
+        }),
+        {
+          status: 500,
+          headers: { ...originHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
   },
 };

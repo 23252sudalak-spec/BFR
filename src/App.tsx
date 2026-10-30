@@ -18,7 +18,9 @@ import {
   appendPermitToSheets, 
   fetchPermitsFromSheets, 
   loadCachedPermits, 
-  saveCachedPermits 
+  saveCachedPermits,
+  loadSheetsConfig,
+  isValidWorkerUrl
 } from './services/googleSheetsService';
 
 import { PermitFormModal } from './components/PermitFormModal';
@@ -27,6 +29,7 @@ import { MonthlySafetyReport } from './components/MonthlySafetyReport';
 import { DriveSyncModal } from './components/DriveSyncModal';
 import { NotificationDrawer } from './components/NotificationDrawer';
 import { UserRoleSwitcher } from './components/UserRoleSwitcher';
+import { ToastNotification, ToastItem } from './components/ToastNotification';
 
 export default function App() {
   // Localization
@@ -46,6 +49,17 @@ export default function App() {
   });
   const [isLoadingSheetsData, setIsLoadingSheetsData] = useState(false);
   const [lastSheetsFetchTime, setLastSheetsFetchTime] = useState<string | null>(null);
+
+  // Real-time Toast Notifications state
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const showToast = (toast: Omit<ToastItem, 'id'> & { id?: string }) => {
+    const newToast: ToastItem = {
+      id: toast.id || `toast-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      ...toast,
+    };
+    setToasts(prev => [newToast, ...prev].slice(0, 5));
+  };
 
   const [notifications, setNotifications] = useState<SafetyNotification[]>(initialNotifications);
   const [driveArchive, setDriveArchive] = useState<DriveArchiveItem[]>(mockDriveArchive);
@@ -68,6 +82,7 @@ export default function App() {
   // Global Sync Status
   const [isSyncingDrive, setIsSyncingDrive] = useState(false);
   const [lastSyncedTime, setLastSyncedTime] = useState('10:46');
+  const [isWorkerConfigured, setIsWorkerConfigured] = useState(() => isValidWorkerUrl(loadSheetsConfig().workerUrl));
 
   // Filtered Permits
   const filteredPermits = permits.filter(p => {
@@ -114,6 +129,15 @@ export default function App() {
         setLastSheetsFetchTime(timeStr);
         setLastSyncedTime(timeStr);
 
+        if (isManual) {
+          showToast({
+            type: 'success',
+            title: '📊 ซิงค์ข้อมูล Google Sheets สำเร็จ',
+            message: `ดึงข้อมูลใบอนุญาตทำงานล่าสุด ${res.permits.length} รายการจาก Google Sheets เรียบร้อยแล้ว`,
+            duration: 4000
+          });
+        }
+
         const newNotif: SafetyNotification = {
           id: `notif-sheets-fetch-${Date.now()}`,
           title: '📊 ซิงค์ข้อมูล Google Sheets สำเร็จ',
@@ -125,6 +149,13 @@ export default function App() {
         };
         setNotifications(prev => [newNotif, ...prev]);
       } else if (isManual && !res.success) {
+        showToast({
+          type: 'warning',
+          title: '⚠️ ไม่สามารถดึงข้อมูลได้',
+          message: res.message || 'โปรดตรวจสอบการตั้งค่า Worker URL ในเมนู Sheets & Drive Hub',
+          duration: 6000
+        });
+
         const failNotif: SafetyNotification = {
           id: `notif-sheets-fail-${Date.now()}`,
           title: '⚠️ ซิงค์ข้อมูล Google Sheets',
@@ -138,6 +169,14 @@ export default function App() {
       }
     } catch (e: any) {
       console.warn('Failed to fetch permits from Google Sheets:', e);
+      if (isManual) {
+        showToast({
+          type: 'error',
+          title: '❌ เกิดข้อผิดพลาดในการเชื่อมต่อ',
+          message: e?.message || 'ไม่สามารถติดต่อเซิร์ฟเวอร์ได้',
+          duration: 6000
+        });
+      }
     } finally {
       setIsLoadingSheetsData(false);
     }
@@ -146,6 +185,42 @@ export default function App() {
   // Automatically fetch from Google Sheets upon initial app launch / page refresh
   useEffect(() => {
     fetchSheetsData(false);
+  }, []);
+
+  // Background live sync every 12 seconds to auto-detect permits submitted from other devices
+  useEffect(() => {
+    const config = loadSheetsConfig();
+    if (!isValidWorkerUrl(config.workerUrl)) return;
+
+    const intervalId = setInterval(async () => {
+      try {
+        const res = await fetchPermitsFromSheets();
+        if (res.success && res.permits && res.permits.length > 0) {
+          setPermits(prev => {
+            const currentPermitNos = new Set(prev.map(p => p.permitNumber));
+            const newIncoming = res.permits.filter(p => !currentPermitNos.has(p.permitNumber));
+
+            if (newIncoming.length > 0) {
+              const newest = newIncoming[0];
+              showToast({
+                type: 'info',
+                title: `📥 ได้รับใบงานใหม่จากทีมงาน (${newIncoming.length} รายการ)`,
+                message: `[${newest.permitNumber}] ${newest.title} (${newest.contractorCompany}) ดึงขึ้นหน้าจออัตโนมัติแล้ว`,
+                permitNumber: newest.permitNumber,
+                duration: 7000
+              });
+              saveCachedPermits(res.permits);
+              return res.permits;
+            }
+            return prev;
+          });
+        }
+      } catch {
+        // Silently ignore background sync issues
+      }
+    }, 12000);
+
+    return () => clearInterval(intervalId);
   }, []);
 
   // Handlers
@@ -169,22 +244,56 @@ export default function App() {
     };
     setNotifications(prev => [newNotif, ...prev]);
 
+    // Show initial sending Toast
+    showToast({
+      type: 'info',
+      title: '⏳ กำลังบันทึกข้อมูล...',
+      message: `กำลังส่งใบขออนุญาต [${newPermit.permitNumber}] ไปยัง Google Sheets`,
+      permitNumber: newPermit.permitNumber,
+      duration: 3500
+    });
+
     // Direct Google Sheets Append via Cloudflare Worker
     try {
       const sheetsResult = await appendPermitToSheets(newPermit, 'create');
+      if (sheetsResult.success) {
+        showToast({
+          type: 'success',
+          title: '✅ ส่งข้อมูลเข้า Google Sheets สำเร็จ',
+          message: `${sheetsResult.message}`,
+          permitNumber: newPermit.permitNumber,
+          duration: 6000
+        });
+      } else {
+        showToast({
+          type: 'error',
+          title: '❌ ส่งข้อมูลเข้า Google Sheets ล้มเหลว',
+          message: `${sheetsResult.message || 'โปรดตรวจสอบการตั้งค่า Cloudflare Worker URL'}`,
+          permitNumber: newPermit.permitNumber,
+          duration: 8000
+        });
+      }
+
       const sheetsNotif: SafetyNotification = {
         id: `notif-sheets-${Date.now()}`,
-        title: `📊 ซิงค์ Google Sheets อัตโนมัติ`,
+        title: sheetsResult.success ? `📊 ซิงค์ Google Sheets สำเร็จ` : `⚠️ ซิงค์ Google Sheets ล้มเหลว`,
         message: `${sheetsResult.message} (Permit: ${newPermit.permitNumber})`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         channel: 'system',
         permitId: newPermit.id,
-        type: sheetsResult.success ? 'success' : 'info',
+        type: sheetsResult.success ? 'success' : 'danger',
         read: false
       };
       setNotifications(prev => [sheetsNotif, ...prev]);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Google Sheets automatic append failed:', err);
+      showToast({
+        type: 'error',
+        title: '❌ เกิดข้อผิดพลาดในการส่งข้อมูล',
+        message: err?.message || 'ไม่สามารถติดต่อ Google Sheets ได้',
+        permitNumber: newPermit.permitNumber,
+        duration: 8000
+      });
     }
   };
 
@@ -213,9 +322,33 @@ export default function App() {
     // Auto append/log state change in Google Sheets when permit is approved, active, or closed
     if (updated.status === 'approved' || updated.status === 'active' || updated.status === 'closed') {
       try {
-        await appendPermitToSheets(updated, updated.status === 'closed' ? 'close' : 'update');
-      } catch (err) {
+        const res = await appendPermitToSheets(updated, updated.status === 'closed' ? 'close' : 'update');
+        if (res.success) {
+          showToast({
+            type: 'success',
+            title: '✅ บันทึกสถานะลง Google Sheets สำเร็จ',
+            message: `ใบงาน [${updated.permitNumber}] สถานะเป็น "${updated.status.toUpperCase()}" เรียบร้อยแล้ว`,
+            permitNumber: updated.permitNumber,
+            duration: 5000
+          });
+        } else {
+          showToast({
+            type: 'error',
+            title: '❌ ซิงค์สถานะเข้า Google Sheets ล้มเหลว',
+            message: res.message,
+            permitNumber: updated.permitNumber,
+            duration: 7000
+          });
+        }
+      } catch (err: any) {
         console.error('Failed to sync updated permit to Google Sheets:', err);
+        showToast({
+          type: 'error',
+          title: '❌ ซิงค์สถานะไม่สำเร็จ',
+          message: err?.message || 'ไม่สามารถติดต่อ Google Sheets ได้',
+          permitNumber: updated.permitNumber,
+          duration: 7000
+        });
       }
     }
   };
@@ -408,11 +541,15 @@ export default function App() {
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => setIsDriveModalOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-medium transition-colors cursor-pointer"
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border font-medium transition-colors cursor-pointer ${
+              isWorkerConfigured
+                ? 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30'
+            }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>Google Sheets Live Sync</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className={`w-1.5 h-1.5 rounded-full ${isWorkerConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
           </button>
 
           <button
@@ -491,6 +628,29 @@ export default function App() {
         ) : (
           /* VIEW: DASHBOARD */
           <div className="space-y-6">
+            {/* Warning banner when Worker URL is not yet configured for multi-device sync */}
+            {!isWorkerConfigured && (
+              <div className="p-4 bg-amber-950/40 border border-amber-500/30 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-amber-200 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 shrink-0">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-300">ยังไม่ได้ระบุ Cloudflare Worker URL สำหรับเชื่อมต่อ Google Sheets</span>
+                    <p className="text-amber-200/80 text-[11px] mt-0.5">
+                      เพื่อให้เครื่องของเพื่อนร่วมงานและอุปกรณ์อื่นส่งใบขออนุญาตเข้าสู่ฐานข้อมูลกลางได้ กรุณาตั้งค่า Worker URL ที่ออนไลน์อยู่จริง
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsDriveModalOpen(true)}
+                  className="px-3.5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
+                >
+                  ตั้งค่า Worker URL ทันที
+                </button>
+              </div>
+            )}
+
             {/* Hero Plant Banner & Zero Accident Days Counter Strip */}
             <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-900">
               <div className="absolute inset-0 opacity-20 pointer-events-none">
@@ -900,6 +1060,18 @@ export default function App() {
         language={language}
         onClose={() => setIsUserSwitcherOpen(false)}
         onSelectUser={u => setCurrentUser(u)}
+      />
+
+      {/* Real-time Floating Toast Alert Notifications */}
+      <ToastNotification
+        toasts={toasts}
+        onDismiss={id => setToasts(prev => prev.filter(t => t.id !== id))}
+        onOpenPermit={permitNumber => {
+          const found = permits.find(p => p.permitNumber === permitNumber);
+          if (found) {
+            setSelectedPermitForDetail(found);
+          }
+        }}
       />
     </div>
   );

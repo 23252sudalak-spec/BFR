@@ -335,15 +335,15 @@ export const DriveSyncModal: React.FC<DriveSyncModalProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5 md:col-span-2">
                   <label className="text-slate-300 font-semibold flex items-center justify-between">
-                    <span>Cloudflare Worker URL:</span>
-                    <span className="text-[11px] text-slate-500 font-normal">URL ที่ได้หลังจาก Deploy บน Cloudflare</span>
+                    <span>Cloudflare Worker URL (Online HTTPS):</span>
+                    <span className="text-[11px] text-emerald-400 font-normal">URL ออนไลน์จริงจาก Cloudflare Workers</span>
                   </label>
                   <div className="flex gap-2">
                     <input
                       type="url"
                       value={sheetsConfig.workerUrl}
                       onChange={e => setSheetsConfig({ ...sheetsConfig, workerUrl: e.target.value })}
-                      placeholder="https://eptw-sheets-sync.yourname.workers.dev"
+                      placeholder="https://eptw-sheets-sync.<subdomain>.workers.dev"
                       className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 text-slate-100 placeholder-slate-600 focus:outline-none focus:border-sky-500 font-mono text-xs"
                     />
                     <button
@@ -355,6 +355,12 @@ export const DriveSyncModal: React.FC<DriveSyncModalProps> = ({
                       <span>{isTestingConnection ? 'ตรวจสอบ...' : 'ทดสอบการเชื่อมต่อ'}</span>
                     </button>
                   </div>
+                  {(sheetsConfig.workerUrl.includes('localhost') || sheetsConfig.workerUrl.includes('127.0.0.1')) && (
+                    <div className="p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[11px] flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                      <span>คำเตือน: ไม่สามารถใช้ localhost ได้ กรุณากรอก HTTPS URL ของ Cloudflare Worker ที่ออนไลน์อยู่จริง เพื่อให้อุปกรณ์ของคนอื่นและมือถือสามารถส่งข้อมูลได้</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
