@@ -1,7 +1,7 @@
 import { WorkPermit } from '../types/permit';
 
 // ลิงก์ตรงเข้า Google Apps Script (Web App) ฝั่ง Google Sheets ของคุณ
-const GOOGLE_WEBAPP_URL = "https://google.com";
+const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxNMPh0s46O-mCVeaZd27NYl4E2B903Uc6CJsIXFCxKbsQXCPia7IGfsXCpUKL30mY8/exec";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
