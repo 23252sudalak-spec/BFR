@@ -1,14 +1,14 @@
 import { WorkPermit } from '../types/permit';
 
-// ลิงก์ตรงเข้า Google Apps Script (Web App) ฝั่ง Google Sheets ของคุณ
-const GOOGLE_WEBAPP_URL = "https://google.com";
+// บังคับฝังลิงก์ Google Web App (Apps Script ตัว /exec) เข้าไปในระบบโดยตรง
+const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxNMPh0s46O-mCVeaZd27NYl4E2B903Uc6CJsIXFCxKbsQXCPia7IGfsXCpUKL30mY8/exec";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) return { success: true, isSimulated: true };
 
   try {
-    // ยิงข้อมูลตรงข้ามเครื่องเข้า Google Sheets
+    // ส่งข้อมูลใบอนุญาตตรงเข้า Google Sheets
     const response = await fetch(GOOGLE_WEBAPP_URL, {
       method: 'POST',
       mode: 'no-cors', 
@@ -39,7 +39,7 @@ export const appendPermitToSheets = async (permit: any, action: string = 'create
 export const fetchPermitsFromSheets = async (): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) return { success: false, permits: [] };
   try {
-    // ดึงข้อมูลตรงจากสคริปต์ Google Sheets
+    // ดึงข้อมูลตรงจาก Google Sheets มาแสดงผล
     const response = await fetch(`${GOOGLE_WEBAPP_URL}?action=fetch`);
     if (!response.ok) return { success: false, permits: [] };
     const data = await response.json();
@@ -58,6 +58,7 @@ export const testWorkerConnection = async (url: string, apiKey?: string): Promis
   return { success: true, message: "เชื่อมต่อตรงกับ Google Sheets สำเร็จ!" };
 };
 
+// บังคับล็อกค่า Config ภายในแอปไม่ให้ดึงค่าจากหน้าเว็บแอปที่พิมพ์ไม่ได้
 export const loadSheetsConfig = () => ({
   workerUrl: GOOGLE_WEBAPP_URL,
   spreadsheetId: SPREADSHEET_ID,
