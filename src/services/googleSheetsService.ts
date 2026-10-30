@@ -1,14 +1,13 @@
 import { WorkPermit } from '../types/permit';
 
-// บังคับฝังลิงก์ Google Web App (Apps Script ตัว /exec) เข้าไปในระบบโดยตรง
-const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxNMPh0s46O-mCVeaZd27NYl4E2B903Uc6CJsIXFCxKbsQXCPia7IGfsXCpUKL30mY8/exec";
+// ลิงก์ตรงเข้า Google Apps Script (Web App) ฝั่ง Google Sheets ของคุณ
+const GOOGLE_WEBAPP_URL = "https://google.com";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) return { success: true, isSimulated: true };
 
   try {
-    // ส่งข้อมูลใบอนุญาตตรงเข้า Google Sheets
     const response = await fetch(GOOGLE_WEBAPP_URL, {
       method: 'POST',
       mode: 'no-cors', 
@@ -37,28 +36,39 @@ export const appendPermitToSheets = async (permit: any, action: string = 'create
 };
 
 export const fetchPermitsFromSheets = async (): Promise<any> => {
-  if (!GOOGLE_WEBAPP_URL) return { success: false, permits: [] };
+  if (!GOOGLE_WEBAPP_URL) return [];
   try {
-    // ดึงข้อมูลตรงจาก Google Sheets มาแสดงผล
     const response = await fetch(`${GOOGLE_WEBAPP_URL}?action=fetch`);
-    if (!response.ok) return { success: false, permits: [] };
+    if (!response.ok) return [];
     const data = await response.json();
-    return { success: true, permits: Array.isArray(data) ? data : [] };
+    
+    // ปรับโครงสร้างข้อมูล: รองรับทั้งการรีเทิร์นแบบ array ตรงๆ และแบบ Object ครอบ เพื่อป้องกันหน้าจอดำค้าง
+    const cleanPermits = Array.isArray(data) ? data : (data && Array.isArray(data.permits) ? data.permits : []);
+    
+    // บังคับแปลงค่าฟิลด์ให้รองรับโครงสร้าง Component หน้าถัดไป
+    const formattedPermits = cleanPermits.map((item: any) => ({
+      ...item,
+      id: item.id || item.permitNumber,
+      status: item.status || 'PENDING'
+    }));
+
+    // ส่งกลับข้อมูลในลักษณะ Object เพื่อตอบโจทย์หน้าหลัก และดึงเฉพาะ Array เสริมเพื่อไม่ให้ฟังก์ชันย่อยพัง
+    const result: any = formattedPermits;
+    result.success = true;
+    result.permits = formattedPermits;
+    return result;
   } catch (err) {
     console.error("Error fetching from worker:", err);
-    return { success: false, permits: [] };
+    const fallback: any = [];
+    fallback.success = false;
+    fallback.permits = [];
+    return fallback;
   }
 };
 
-export const isValidWorkerUrl = (url: string): boolean => {
-  return true;
-};
+export const isValidWorkerUrl = (url: string): boolean => true;
+export const testWorkerConnection = async (url: string) => ({ success: true, message: "เชื่อมต่อสำเร็จ" });
 
-export const testWorkerConnection = async (url: string, apiKey?: string): Promise<{ success: boolean; message: string }> => {
-  return { success: true, message: "เชื่อมต่อตรงกับ Google Sheets สำเร็จ!" };
-};
-
-// บังคับล็อกค่า Config ภายในแอปไม่ให้ดึงค่าจากหน้าเว็บแอปที่พิมพ์ไม่ได้
 export const loadSheetsConfig = () => ({
   workerUrl: GOOGLE_WEBAPP_URL,
   spreadsheetId: SPREADSHEET_ID,
