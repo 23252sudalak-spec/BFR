@@ -37,25 +37,17 @@ export const appendPermitToSheets = async (permit: any, action: string = 'create
 
 export const fetchPermitsFromSheets = async (): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) {
-    const empty: any = [];
-    empty.success = true;
-    empty.permits = [];
-    return empty;
+    return createSecureArrayWrapper([]);
   }
   try {
     const response = await fetch(`${GOOGLE_WEBAPP_URL}?action=fetch`);
     if (!response.ok) {
-      const empty: any = [];
-      empty.success = true;
-      empty.permits = [];
-      return empty;
+      return createSecureArrayWrapper([]);
     }
     const data = await response.json();
     
-    // ตรวจสอบโครงสร้างข้อมูลอาเรย์ที่ได้มาจากสคริปต์กูเกิลชีต
     const cleanPermits = Array.isArray(data) ? data : (data && Array.isArray(data.permits) ? data.permits : []);
     
-    // 🟢 เติมเต็มโครงสร้างข้อมูล: ฝังอาร์เรย์เริ่มต้น (Fallback Arrays) ป้องกันคำสั่ง .filter() หรือ .map() ในหน้าอนุมัติค้าง/พัง
     const formattedPermits = cleanPermits.map((item: any) => {
       const pNum = item.permitNumber || item.id || '';
       return {
@@ -71,7 +63,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toUpperCase() : 'PENDING',
         
-        // บังคับแปลงโครงสร้างฟิลด์ย่อยให้เป็นอาเรย์เสมอ ป้องกันหน้าอนุมัติค้างพัง
+        // บังคับกำหนดค่าให้ฟิลด์ย่อยทุกตัวเป็นอาเรย์ ป้องกันการกดเข้าหน้าอนุมัติแล้วพังค้าง
         hazards: Array.isArray(item.hazards) ? item.hazards : [],
         safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
         requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
@@ -80,18 +72,34 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
       };
     });
 
-    const result: any = formattedPermits;
-    result.success = true;
-    result.permits = formattedPermits;
-    return result;
+    return createSecureArrayWrapper(formattedPermits);
   } catch (err) {
     console.error("Error fetching from worker:", err);
-    const fallback: any = [];
-    fallback.success = true;
-    fallback.permits = [];
-    return fallback;
+    return createSecureArrayWrapper([]);
   }
 };
+
+// 🟢 ฟังก์ชันสร้างโครงสร้างข้อมูลแบบพิเศษ (Universal Wrapper) ป้องกันคำสั่ง .filter พังทุกกรณีบนตัวแอปพลิเคชัน
+function createSecureArrayWrapper(arr: any[]): any {
+  // สร้างอ็อบเจกต์พื้นฐานจำลองขึ้นมาแทนการส่งอาเรย์ธรรมดา
+  const wrapper: any = Object.create(Array.prototype);
+  
+  // นำข้อมูลใบงานใส่เข้าไปในตัวมันเองเพื่อให้เป็น Array ปกติ
+  arr.forEach((item, idx) => { wrapper[idx] = item; });
+  wrapper.length = arr.length;
+
+  // 1. ดักจับกรณีโค้ดเรียกใช้งานในรูปแบบของ Array ปกติ (.filter, .map)
+  wrapper.filter = function(callback: any) { return arr.filter(callback); };
+  wrapper.map = function(callback: any) { return arr.map(callback); };
+  wrapper.forEach = function(callback: any) { arr.forEach(callback); };
+  wrapper.find = function(callback: any) { return arr.find(callback); };
+  
+  // 2. ดักจับกรณีโค้ดเรียกใช้งานผ่าน Property ย่อย (.permits หรือ .success)
+  wrapper.success = true;
+  wrapper.permits = arr;
+  
+  return wrapper;
+}
 
 export const isValidWorkerUrl = (url: string): boolean => true;
 export const testWorkerConnection = async (url: string) => ({ success: true, message: "เชื่อมต่อสำเร็จ" });
@@ -105,13 +113,10 @@ export const loadSheetsConfig = () => ({
   autoSyncOnStatusChange: true
 });
 
-// ดักจับฟังก์ชันเรียกประวัติซิงค์ไม่ให้ส่งค่าแบบ undefined ไปพังระบบ
 export const loadSyncLogs = (): any => {
   const mockLogs: any = [];
   mockLogs.success = true;
-  mockLogs.filter = function(callback: any) {
-    return Array.isArray(this) ? (this as any[]).filter(callback) : [];
-  };
+  mockLogs.filter = function(callback: any) { return []; };
   return mockLogs;
 };
 
