@@ -52,22 +52,36 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
     }
     const data = await response.json();
     
+    // ตรวจสอบโครงสร้างข้อมูลที่ส่งกลับมาจาก Google Sheets
     const cleanPermits = Array.isArray(data) ? data : (data && Array.isArray(data.permits) ? data.permits : []);
     
-    // 🟢 เสริมโครงสร้างข้อมูลพิเศษ: ใส่ค่า Default Array เปล่าป้องกันคำสั่ง .filter() พังถล่มหน้าจอ
-    const formattedPermits = cleanPermits.map((item: any) => ({
-      ...item,
-      id: item.id || item.permitNumber || String(Math.random()),
-      permitNumber: item.permitNumber || '',
-      status: item.status || 'PENDING',
-      // สร้างอาร์เรย์จำลองป้องกัน .filter() ของตารางย่อย หรือ Checklist พัง
-      hazards: Array.isArray(item.hazards) ? item.hazards : [],
-      safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
-      requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
-      gasLogs: Array.isArray(item.gasLogs) ? item.gasLogs : [],
-      signatures: Array.isArray(item.signatures) ? item.signatures : []
-    }));
+    // 🟢 ปรับการแกะข้อมูลขากลับ: แมปค่าคีย์ตัวแปรให้ตรงกับหัวตารางและ Component หน้าหลักร้อยเปอร์เซ็นต์
+    const formattedPermits = cleanPermits.map((item: any) => {
+      // รองรับกรณีที่ข้อมูลส่งกลับมาเป็น Object ที่ระบุคีย์ชัดเจน หรือส่งมาเป็นคีย์สำรอง
+      const pNum = item.permitNumber || item.id || '';
+      return {
+        ...item,
+        id: pNum,
+        permitNumber: pNum,
+        type: item.type || 'งานทั่วไป',
+        riskLevel: item.riskLevel || 'High',
+        title: item.title || 'ไม่มีชื่อใบงาน',
+        facilityZone: item.facilityZone || '',
+        location: item.location || '',
+        contractorCompany: item.contractorCompany || '',
+        startDate: item.startDate || item.timestamp || '',
+        status: item.status || 'PENDING',
+        
+        // อาร์เรย์ตั้งต้นเพื่อความปลอดภัยในการเข้าหน้าย่อย
+        hazards: Array.isArray(item.hazards) ? item.hazards : [],
+        safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
+        requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
+        gasLogs: Array.isArray(item.gasLogs) ? item.gasLogs : [],
+        signatures: Array.isArray(item.signatures) ? item.signatures : []
+      };
+    });
 
+    // ส่งกลับข้อมูลรูปแบบ Array ที่ฝังคุณสมบัติซ่อน เพื่อตอบโจทย์ทุกคำสั่งดึงค่า (.filter และ .map) บนแอป
     const result: any = formattedPermits;
     result.success = true;
     result.permits = formattedPermits;
