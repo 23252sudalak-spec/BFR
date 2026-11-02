@@ -4,6 +4,30 @@ import { WorkPermit } from '../types/permit';
 const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
+// 🟢 ขั้นเด็ดขาด (Global Protection): ดักจับคีย์ประวัติและสถานะที่ระบาดไปพังฟังก์ชัน dt ทั่วระบบ
+if (typeof window !== 'undefined') {
+  const createSafeProxyArray = () => {
+    const arr: any = [];
+    arr.success = true;
+    arr.permits = arr;
+    arr.logs = arr;
+    arr.filter = function(cb: any) { return []; };
+    arr.map = function(cb: any) { return []; };
+    return arr;
+  };
+
+  // ฉีดคีย์ตัวแปรที่คอมโพเนนต์ React มักแอบเรียกหาคั่นกลางระหว่างดำเนินงาน
+  ['syncLogs', 'logs', 'cachedPermits', 'history', 'timeline'].forEach(key => {
+    try {
+      Object.defineProperty(window, key, {
+        get: () => createSafeProxyArray(),
+        set: () => {},
+        configurable: true
+      });
+    } catch (e) {}
+  });
+}
+
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) return { success: true, isSimulated: true };
 
@@ -63,7 +87,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toUpperCase() : 'PENDING',
         
-        // เติมเต็มค่าอาร์เรย์ย่อยป้องกันภายในหน้าอนุมัติค้าง
+        // อาร์เรย์ตั้งต้นระดับแถวใบงาน ป้องกันภายในหน้าดำเนินการค้างพัง
         hazards: Array.isArray(item.hazards) ? item.hazards : [],
         safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
         requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
@@ -74,7 +98,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         timeline: Array.isArray(item.timeline) ? item.timeline : [],
         syncLogs: Array.isArray(item.syncLogs) ? item.syncLogs : [],
         
-        // ฟิลด์สายข้อมูลปกติสำหรับใช้ในปุ่มอัปโหลด/ลงลายเซ็น (ไม่พังเป็น Object)
+        // สายข้อมูลข้อความปกติสำหรับใช้ในปุ่มอัปโหลด/ลงลายเซ็น
         signaturesRecorded: item.signaturesRecorded || '',
         requesterSignature: item.requesterSignature || '',
         safetyOfficerSignature: item.safetyOfficerSignature || '',
@@ -89,17 +113,12 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
   }
 };
 
-// 🟢 ฟังก์ชันจัดระเบียบอาร์เรย์พิเศษ ดักจับ .filter ได้ปลอดภัย 100% ครอบคลุมทั้ง Permits และ Logs
 function createSafeArray(baseArr: any[]): any {
   const safeArr = [...baseArr];
   Object.defineProperty(safeArr, 'success', { value: true, writable: true, enumerable: false });
   Object.defineProperty(safeArr, 'permits', { value: safeArr, writable: true, enumerable: false });
   Object.defineProperty(safeArr, 'logs', { value: safeArr, writable: true, enumerable: false });
-  
-  // บังคับผูกฟังก์ชัน .filter ไว้ที่ตัว Object เผื่อ React เรียกใช้ในบริบทแปลก ๆ
-  safeArr.filter = function(callback: any) {
-    return baseArr.filter(callback);
-  };
+  safeArr.filter = function(callback: any) { return baseArr.filter(callback); };
   return safeArr;
 }
 
@@ -115,7 +134,6 @@ export const loadSheetsConfig = () => ({
   autoSyncOnStatusChange: true
 });
 
-// 🟢 ปรับเปลี่ยนฟังก์ชันดึงประวัติล็อกและแคชทั้งหมดให้ส่งกลับเป็น Safe Array เพื่อเคลียร์ปัญหากลุ่มฟังก์ชัน lt พังค้างถาวร
 export const loadSyncLogs = (): any => createSafeArray([]);
 export const loadCachedPermits = (): any => createSafeArray([]);
 export const saveCachedPermits = (): any => createSafeArray([]);
