@@ -118,16 +118,9 @@ export const loadSheetsConfig = () => ({
   autoSyncOnStatusChange: true
 });
 
-// 🟢 ปรับเปลี่ยนฟังก์ชันให้ส่งค่ากลับเป็น ฟังก์ชันเปล่าที่พร้อมรันเสมอ เพื่อแก้ปัญหาแนบลายเซ็นไม่ได้
-export const loadSyncLogs = (): any => {
-  const mockLogs: any = [];
-  mockLogs.success = true;
-  mockLogs.filter = function(callback: any) { return []; };
-  return mockLogs;
-};
-
-// ปรับฟังก์ชันย่อยเหล่านี้ให้เปิดรับทุก Arguments ป้องกันการโดนมองว่าเป็น object ปกติแล้วพังค้าง
-export const saveSheetsConfig = (...args: any[]) => { return {}; };
-export const loadCachedPermits = (...args: any[]) => { return []; };
-export const saveCachedPermits = (...args: any[]) => { return {}; };
-export const addSyncLog = (...args: any[]) => { return {}; };
+// บังคับส่งค่ากลับเป็นฟังก์ชันเปล่าธรรมดาแบบดั้งเดิม แยกเด็ดขาดจากระบบ Proxy เพื่อแก้ปัญหารูปภาพลายเซ็น
+export function loadSyncLogs() { return []; }
+export function saveSheetsConfig() { return; }
+export function loadCachedPermits() { return []; }
+export function saveCachedPermits() { return; }
+export function addSyncLog() { return; }
