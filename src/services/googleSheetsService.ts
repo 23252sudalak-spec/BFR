@@ -4,30 +4,6 @@ import { WorkPermit } from '../types/permit';
 const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
-// 🟢 ขั้นเด็ดขาด (Global Protection): ดักจับคีย์ประวัติและสถานะที่ระบาดไปพังฟังก์ชัน dt ทั่วระบบ
-if (typeof window !== 'undefined') {
-  const createSafeProxyArray = () => {
-    const arr: any = [];
-    arr.success = true;
-    arr.permits = arr;
-    arr.logs = arr;
-    arr.filter = function(cb: any) { return []; };
-    arr.map = function(cb: any) { return []; };
-    return arr;
-  };
-
-  // ฉีดคีย์ตัวแปรที่คอมโพเนนต์ React มักแอบเรียกหาคั่นกลางระหว่างดำเนินงาน
-  ['syncLogs', 'logs', 'cachedPermits', 'history', 'timeline'].forEach(key => {
-    try {
-      Object.defineProperty(window, key, {
-        get: () => createSafeProxyArray(),
-        set: () => {},
-        configurable: true
-      });
-    } catch (e) {}
-  });
-}
-
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) return { success: true, isSimulated: true };
 
@@ -61,12 +37,12 @@ export const appendPermitToSheets = async (permit: any, action: string = 'create
 
 export const fetchPermitsFromSheets = async (): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) {
-    return createSafeArray([]);
+    return createPerfectArray([]);
   }
   try {
     const response = await fetch(`${GOOGLE_WEBAPP_URL}?action=fetch`);
     if (!response.ok) {
-      return createSafeArray([]);
+      return createPerfectArray([]);
     }
     const data = await response.json();
     
@@ -87,7 +63,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toUpperCase() : 'PENDING',
         
-        // อาร์เรย์ตั้งต้นระดับแถวใบงาน ป้องกันภายในหน้าดำเนินการค้างพัง
+        // อาร์เรย์ตั้งต้นระดับแถวใบงานรายตัว ป้องกันฟังก์ชันพังค้าง
         hazards: Array.isArray(item.hazards) ? item.hazards : [],
         safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
         requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
@@ -106,19 +82,30 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
       };
     });
 
-    return createSafeArray(formattedPermits);
+    return createPerfectArray(formattedPermits);
   } catch (err) {
     console.error("Error fetching from worker:", err);
-    return createSafeArray([]);
+    return createPerfectArray([]);
   }
 };
 
-function createSafeArray(baseArr: any[]): any {
+// 🟢 ฟังก์ชันสร้างอาร์เรย์สมบูรณ์แบบสูงสุด ดักจับ .filter() ตระกูล Array ทั้งระบบหน้าบ้าน
+function createPerfectArray(baseArr: any[]): any {
   const safeArr = [...baseArr];
+  
+  // ฉีดพร็อพเพอร์ตี้ซ่อนเพื่อการันตีว่าหาคีย์ย่อยอะไรก็เจอ
   Object.defineProperty(safeArr, 'success', { value: true, writable: true, enumerable: false });
   Object.defineProperty(safeArr, 'permits', { value: safeArr, writable: true, enumerable: false });
   Object.defineProperty(safeArr, 'logs', { value: safeArr, writable: true, enumerable: false });
-  safeArr.filter = function(callback: any) { return baseArr.filter(callback); };
+  Object.defineProperty(safeArr, 'syncLogs', { value: safeArr, writable: true, enumerable: false });
+  Object.defineProperty(safeArr, 'cachedPermits', { value: safeArr, writable: true, enumerable: false });
+
+  // ดักฟังก์ชันคัดกรองเบื้องต้นให้ออกเป็นอาร์เรย์ที่มีโครงสร้างความปลอดภัยนี้เสมอ
+  safeArr.filter = function(callback: any) {
+    const res = baseArr.filter(callback);
+    return createPerfectArray(res);
+  };
+  
   return safeArr;
 }
 
@@ -134,9 +121,10 @@ export const loadSheetsConfig = () => ({
   autoSyncOnStatusChange: true
 });
 
-export const loadSyncLogs = (): any => createSafeArray([]);
-export const loadCachedPermits = (): any => createSafeArray([]);
-export const saveCachedPermits = (): any => createSafeArray([]);
+// บังคับคืนค่าฟังก์ชันจัดเก็บบันทึกประวัติและแคชให้เป็นอาร์เรย์ที่มีการดัก .filter() ปลอดภัยสูงสุด
+export const loadSyncLogs = (): any => createPerfectArray([]);
+export const loadCachedPermits = (): any => createPerfectArray([]);
+export const saveCachedPermits = (): any => createPerfectArray([]);
 
 export const saveSheetsConfig = () => {};
 export const addSyncLog = () => {};
