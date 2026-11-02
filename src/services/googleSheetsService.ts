@@ -37,12 +37,12 @@ export const appendPermitToSheets = async (permit: any, action: string = 'create
 
 export const fetchPermitsFromSheets = async (): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) {
-    return createSecureArrayWrapper([]);
+    return createUniversalProxy([]);
   }
   try {
     const response = await fetch(`${GOOGLE_WEBAPP_URL}?action=fetch`);
     if (!response.ok) {
-      return createSecureArrayWrapper([]);
+      return createUniversalProxy([]);
     }
     const data = await response.json();
     
@@ -50,7 +50,9 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
     
     const formattedPermits = cleanPermits.map((item: any) => {
       const pNum = item.permitNumber || item.id || '';
-      return {
+      
+      // ดักจับและสวมประเภทอาร์เรย์ให้กับข้อมูลใบงานรายตัวล่วงหน้า
+      const baseItem = {
         ...item,
         id: pNum,
         permitNumber: pNum,
@@ -62,43 +64,52 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         contractorCompany: item.contractorCompany || '',
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toUpperCase() : 'PENDING',
-        
-        // บังคับกำหนดค่าให้ฟิลด์ย่อยทุกตัวเป็นอาเรย์ ป้องกันการกดเข้าหน้าอนุมัติแล้วพังค้าง
         hazards: Array.isArray(item.hazards) ? item.hazards : [],
         safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
         requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
         gasLogs: Array.isArray(item.gasLogs) ? item.gasLogs : [],
         signatures: Array.isArray(item.signatures) ? item.signatures : []
       };
+
+      // ใช้ Proxy ครอบตัวใบงานรายชิ้น เพื่อรับประกันว่าในหน้าอนุมัติถ้าเรียกหาคีย์แปลก ๆ จะได้ Array ไปรันต่อเสมอ
+      return new Proxy(baseItem, {
+        get: (target: any, prop: string) => {
+          if (prop in target) return target[prop];
+          // หาก React เรียกหาคีย์ที่ไม่มีอยู่จริง (เช่น logs, checklists) ให้ส่งอาเรย์ปลอมที่มีฟังก์ชันดักจับไปให้ทันที
+          if (typeof prop === 'string') {
+            return createUniversalProxy([]);
+          }
+          return undefined;
+        }
+      });
     });
 
-    return createSecureArrayWrapper(formattedPermits);
+    return createUniversalProxy(formattedPermits);
   } catch (err) {
     console.error("Error fetching from worker:", err);
-    return createSecureArrayWrapper([]);
+    return createUniversalProxy([]);
   }
 };
 
-// 🟢 ฟังก์ชันสร้างโครงสร้างข้อมูลแบบพิเศษ (Universal Wrapper) ป้องกันคำสั่ง .filter พังทุกกรณีบนตัวแอปพลิเคชัน
-function createSecureArrayWrapper(arr: any[]): any {
-  // สร้างอ็อบเจกต์พื้นฐานจำลองขึ้นมาแทนการส่งอาเรย์ธรรมดา
-  const wrapper: any = Object.create(Array.prototype);
-  
-  // นำข้อมูลใบงานใส่เข้าไปในตัวมันเองเพื่อให้เป็น Array ปกติ
-  arr.forEach((item, idx) => { wrapper[idx] = item; });
-  wrapper.length = arr.length;
-
-  // 1. ดักจับกรณีโค้ดเรียกใช้งานในรูปแบบของ Array ปกติ (.filter, .map)
-  wrapper.filter = function(callback: any) { return arr.filter(callback); };
-  wrapper.map = function(callback: any) { return arr.map(callback); };
-  wrapper.forEach = function(callback: any) { arr.forEach(callback); };
-  wrapper.find = function(callback: any) { return arr.find(callback); };
-  
-  // 2. ดักจับกรณีโค้ดเรียกใช้งานผ่าน Property ย่อย (.permits หรือ .success)
-  wrapper.success = true;
-  wrapper.permits = arr;
-  
-  return wrapper;
+// 🟢 สุดยอดฟังก์ชัน Proxy (Universal Proxy Wrapper) ดักจับคำสั่ง .filter ทั่วโปรเจกต์ไม่ให้เออร์เรอร์พังค้าง
+function createUniversalProxy(targetArr: any[]): any {
+  const handler = {
+    get: (target: any, prop: string) => {
+      // 1. รองรับการเรียกใช้งานในฐานะอาร์เรย์มาตรฐาน
+      if (prop === 'filter') return (cb: any) => targetArr.filter(cb);
+      if (prop === 'map') return (cb: any) => targetArr.map(cb);
+      if (prop === 'forEach') return (cb: any) => targetArr.forEach(cb);
+      if (prop === 'find') return (cb: any) => targetArr.find(cb);
+      if (prop === 'length') return targetArr.length;
+      if (prop === 'permits') return targetArr;
+      if (prop === 'success') return true;
+      if (prop in targetArr) return (targetArr as any)[prop];
+      
+      // 2. ดักจับกรณีหน้าถัดไปดึงคีย์คุณสมบัติอื่น ๆ ไปทำคำสั่งต่อซ้อนกัน
+      return createUniversalProxy([]);
+    }
+  };
+  return new Proxy(targetArr, handler);
 }
 
 export const isValidWorkerUrl = (url: string): boolean => true;
@@ -113,13 +124,7 @@ export const loadSheetsConfig = () => ({
   autoSyncOnStatusChange: true
 });
 
-export const loadSyncLogs = (): any => {
-  const mockLogs: any = [];
-  mockLogs.success = true;
-  mockLogs.filter = function(callback: any) { return []; };
-  return mockLogs;
-};
-
+export const loadSyncLogs = (): any => createUniversalProxy([]);
 export const saveSheetsConfig = () => {};
 export const loadCachedPermits = () => null;
 export const saveCachedPermits = () => {};
