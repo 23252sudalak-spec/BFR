@@ -63,7 +63,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toUpperCase() : 'PENDING',
         
-        // 🟢 ฝังอาร์เรย์ความปลอดภัยขั้นสูงสุด ดักจับทุกคีย์ที่ฟังก์ชัน lt ในหน้าอนุมัตินิยมเรียกใช้จัดระเบียบ .filter() เพื่อป้องกันหน้าค้าง
+        // เติมเต็มค่าอาร์เรย์ย่อยป้องกันภายในหน้าอนุมัติค้าง
         hazards: Array.isArray(item.hazards) ? item.hazards : [],
         safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
         requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
@@ -89,11 +89,17 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
   }
 };
 
+// 🟢 ฟังก์ชันจัดระเบียบอาร์เรย์พิเศษ ดักจับ .filter ได้ปลอดภัย 100% ครอบคลุมทั้ง Permits และ Logs
 function createSafeArray(baseArr: any[]): any {
   const safeArr = [...baseArr];
-  // แนบคุณสมบัติดักจับสำหรับฟังก์ชันเรียกใช้แบบ Object ครอบคุมทุกคำสั่งดึงค่าของ React
   Object.defineProperty(safeArr, 'success', { value: true, writable: true, enumerable: false });
   Object.defineProperty(safeArr, 'permits', { value: safeArr, writable: true, enumerable: false });
+  Object.defineProperty(safeArr, 'logs', { value: safeArr, writable: true, enumerable: false });
+  
+  // บังคับผูกฟังก์ชัน .filter ไว้ที่ตัว Object เผื่อ React เรียกใช้ในบริบทแปลก ๆ
+  safeArr.filter = function(callback: any) {
+    return baseArr.filter(callback);
+  };
   return safeArr;
 }
 
@@ -109,11 +115,10 @@ export const loadSheetsConfig = () => ({
   autoSyncOnStatusChange: true
 });
 
-export const loadSyncLogs = (): any => {
-  return createSafeArray([]);
-};
+// 🟢 ปรับเปลี่ยนฟังก์ชันดึงประวัติล็อกและแคชทั้งหมดให้ส่งกลับเป็น Safe Array เพื่อเคลียร์ปัญหากลุ่มฟังก์ชัน lt พังค้างถาวร
+export const loadSyncLogs = (): any => createSafeArray([]);
+export const loadCachedPermits = (): any => createSafeArray([]);
+export const saveCachedPermits = (): any => createSafeArray([]);
 
 export const saveSheetsConfig = () => {};
-export const loadCachedPermits = () => [];
-export const saveCachedPermits = () => {};
 export const addSyncLog = () => {};
