@@ -4,28 +4,6 @@ import { WorkPermit } from '../types/permit';
 const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
-// 🟢 เทคนิคขั้นเด็ดขาด (Global Object Injection): ฉีดอาร์เรย์ปลอดภัยเข้าหาตัวแปรระบบหน้าเว็บ ป้องกันคำสั่ง .filter พังทุกจุดในแอปพลิเคชัน
-if (typeof window !== 'undefined') {
-  const injectSafeArray = (key: string) => {
-    try {
-      const safeArr: any = [];
-      safeArr.success = true;
-      safeArr.permits = safeArr;
-      safeArr.filter = function(cb: any) { return []; };
-      
-      // ฝังเข้าสู่ระบบ Global Window เพื่อดักจับทุกโค้ดใน index-kQnN6oe0.js
-      Object.defineProperty(window, key, {
-        get: () => safeArr,
-        set: () => {},
-        configurable: true
-      });
-    } catch (e) {}
-  };
-
-  // ดักจับรายชื่อตัวแปรที่หน้า React มักนิยมเรียกใช้จัดระเบียบล็อกซิงค์ข้อมูล
-  ['syncLogs', 'logs', 'cachedPermits', 'sheetsConfig'].forEach(injectSafeArray);
-}
-
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) return { success: true, isSimulated: true };
 
@@ -85,14 +63,18 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toUpperCase() : 'PENDING',
         
-        // ฟิลด์ข้อมูลย่อยตั้งต้นสำหรับความเสถียรในหน้ารายละเอียดเอกสาร
+        // 🟢 ฝังอาร์เรย์ความปลอดภัยขั้นสูงสุด ดักจับทุกคีย์ที่ฟังก์ชัน lt ในหน้าอนุมัตินิยมเรียกใช้จัดระเบียบ .filter() เพื่อป้องกันหน้าค้าง
         hazards: Array.isArray(item.hazards) ? item.hazards : [],
         safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
         requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
         gasLogs: Array.isArray(item.gasLogs) ? item.gasLogs : [],
         signatures: Array.isArray(item.signatures) ? item.signatures : [],
+        logs: Array.isArray(item.logs) ? item.logs : [],
+        history: Array.isArray(item.history) ? item.history : [],
+        timeline: Array.isArray(item.timeline) ? item.timeline : [],
+        syncLogs: Array.isArray(item.syncLogs) ? item.syncLogs : [],
         
-        // ฟิลด์สายข้อมูลปกติสำหรับใช้ในปุ่มอัปโหลด/ลงลายเซ็น
+        // ฟิลด์สายข้อมูลปกติสำหรับใช้ในปุ่มอัปโหลด/ลงลายเซ็น (ไม่พังเป็น Object)
         signaturesRecorded: item.signaturesRecorded || '',
         requesterSignature: item.requesterSignature || '',
         safetyOfficerSignature: item.safetyOfficerSignature || '',
@@ -109,6 +91,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
 
 function createSafeArray(baseArr: any[]): any {
   const safeArr = [...baseArr];
+  // แนบคุณสมบัติดักจับสำหรับฟังก์ชันเรียกใช้แบบ Object ครอบคุมทุกคำสั่งดึงค่าของ React
   Object.defineProperty(safeArr, 'success', { value: true, writable: true, enumerable: false });
   Object.defineProperty(safeArr, 'permits', { value: safeArr, writable: true, enumerable: false });
   return safeArr;
