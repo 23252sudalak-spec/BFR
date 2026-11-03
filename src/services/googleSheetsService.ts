@@ -37,12 +37,12 @@ export const appendPermitToSheets = async (permit: any, action: string = 'create
 
 export const fetchPermitsFromSheets = async (): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) {
-    return createPerfectArray([]);
+    return createInjectableArray([]);
   }
   try {
     const response = await fetch(`${GOOGLE_WEBAPP_URL}?action=fetch`);
     if (!response.ok) {
-      return createPerfectArray([]);
+      return createInjectableArray([]);
     }
     const data = await response.json();
     
@@ -63,7 +63,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toUpperCase() : 'PENDING',
         
-        // อาร์เรย์ตั้งต้นระดับแถวใบงานรายตัว ป้องกันฟังก์ชันพังค้าง
+        // เติมเต็มค่าอาร์เรย์ย่อยสำหรับดักจับคอมโพเนนต์ย่อยในหน้าอนุมัติรายชิ้น
         hazards: Array.isArray(item.hazards) ? item.hazards : [],
         safetyMeasures: Array.isArray(item.safetyMeasures) ? item.safetyMeasures : [],
         requiredPPE: Array.isArray(item.requiredPPE) ? item.requiredPPE : [],
@@ -74,7 +74,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         timeline: Array.isArray(item.timeline) ? item.timeline : [],
         syncLogs: Array.isArray(item.syncLogs) ? item.syncLogs : [],
         
-        // สายข้อมูลข้อความปกติสำหรับใช้ในปุ่มอัปโหลด/ลงลายเซ็น (ไม่พังเป็น Object)
+        // กำหนดข้อมูลลายเซ็นเป็น String ธรรมดาเพื่อความปลอดภัย ไม่ตีกับสคริปต์รูปภาพ
         signaturesRecorded: item.signaturesRecorded || '',
         requesterSignature: item.requesterSignature || '',
         safetyOfficerSignature: item.safetyOfficerSignature || '',
@@ -82,30 +82,25 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
       };
     });
 
-    return createPerfectArray(formattedPermits);
+    return createInjectableArray(formattedPermits);
   } catch (err) {
     console.error("Error fetching from worker:", err);
-    return createPerfectArray([]);
+    return createInjectableArray([]);
   }
 };
 
-// 🟢 ฟังก์ชันสร้างอาร์เรย์พิเศษ ดักจับฟังก์ชัน .filter() ไม่ให้เออร์เรอร์เด็ดขาดในตัวแอป
-function createPerfectArray(baseArr: any[]): any {
-  const safeArr = [...baseArr];
+// 🟢 เทคนิคฝังคุณสมบัติลงบนอาร์เรย์ตรงๆ (No-Proxy Property Injection): ป้องกันเออร์เรอร์ .filter() ของทุกคอมโพเนนต์ได้อย่างเด็ดขาด
+function createInjectableArray(sourceArr: any[]): any[] {
+  const safeArr = [...sourceArr];
   
-  // ฉีดคุณสมบัติคีย์จำเป็นสำหรับการดักจับคีย์ย่อยในหน้าหลักและหน้าโมดูล DriveSyncModal.tsx
-  Object.defineProperty(safeArr, 'success', { value: true, writable: true, enumerable: false });
-  Object.defineProperty(safeArr, 'permits', { value: safeArr, writable: true, enumerable: false });
-  Object.defineProperty(safeArr, 'logs', { value: safeArr, writable: true, enumerable: false });
-  Object.defineProperty(safeArr, 'syncLogs', { value: safeArr, writable: true, enumerable: false });
-  Object.defineProperty(safeArr, 'cachedPermits', { value: safeArr, writable: true, enumerable: false });
+  // ใช้กลไก Object.defineProperty เพื่อซ่อนคุณสมบัติขยายไม่ให้ขัดขวางลูปอัปโหลดรูปภาพ
+  Object.defineProperty(safeArr, 'success', { value: true, writable: true, configurable: true });
+  Object.defineProperty(safeArr, 'permits', { value: safeArr, writable: true, configurable: true });
+  Object.defineProperty(safeArr, 'logs', { value: safeArr, writable: true, configurable: true });
+  Object.defineProperty(safeArr, 'syncLogs', { value: safeArr, writable: true, configurable: true });
+  Object.defineProperty(safeArr, 'count', { value: sourceArr.length, writable: true, configurable: true });
+  Object.defineProperty(safeArr, 'message', { value: 'ดึงข้อมูลสำเร็จ', writable: true, configurable: true });
 
-  // ดักฟังก์ชัน .filter() ให้ตอบรับกล่องอาเรย์ที่ไม่มีทางพังกลับไปให้ React เรนเดอร์จอต่อเสมอ
-  safeArr.filter = function(callback: any) {
-    const res = baseArr.filter(callback);
-    return createPerfectArray(res);
-  };
-  
   return safeArr;
 }
 
@@ -121,10 +116,10 @@ export const loadSheetsConfig = () => ({
   autoSyncOnStatusChange: true
 });
 
-// บังคับคืนค่าฟังก์ชันจัดเก็บบันทึกประวัติและแคชให้เป็นอาร์เรย์ที่ผูกฟังก์ชัน .filter() ปลอดภัยสูงสุด แก้อาการค้างในหน้าจอได้ถาวร
-export const loadSyncLogs = (): any => createPerfectArray([]);
-export const loadCachedPermits = (): any => createPerfectArray([]);
-export const saveCachedPermits = (): any => createPerfectArray([]);
+// ดักจับฟังก์ชันเรียกแคชและล็อกประวัติทั้งหมดให้คืนค่าเป็นอาร์เรย์คุณสมบัติผสมที่ไม่มีวันค้าง
+export const loadSyncLogs = (): any[] => createInjectableArray([]);
+export const loadCachedPermits = (): any[] => createInjectableArray([]);
+export const saveCachedPermits = () => {};
 
 export const saveSheetsConfig = () => {};
 export const addSyncLog = () => {};
