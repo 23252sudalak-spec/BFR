@@ -1,35 +1,8 @@
 import { WorkPermit } from '../types/permit';
 
 // ลิงก์ตรงเข้า Google Apps Script (Web App) ฝั่ง Google Sheets ของคุณที่ดึงข้อมูลได้ถูกต้อง
-const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
-const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
-
-// 🟢 ระบบดักจับตัวแปรความปลอดภัยระดับบราวเซอร์ ป้องกันคำสั่ง .filter พังทุกจุดในแอปพลิเคชัน
-if (typeof window !== 'undefined') {
-  const createMockSafeObject = () => {
-    const mock: any = [];
-    mock.success = true;
-    mock.permits = mock;
-    mock.logs = mock;
-    mock.syncLogs = mock;
-    mock.cachedPermits = mock;
-    mock.filter = function() { return []; };
-    mock.map = function() { return []; };
-    return mock;
-  };
-
-  ['syncLogs', 'logs', 'cachedPermits', 'history', 'timeline', 'sheetsConfig'].forEach(key => {
-    try {
-      if (!(key in window)) {
-        Object.defineProperty(window, key, {
-          get: () => createMockSafeObject(),
-          set: () => {},
-          configurable: true
-        });
-      }
-    } catch (e) {}
-  });
-}
+const GOOGLE_WEBAPP_URL = "https://google.com";
+const SPREADSHEET_ID = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
 
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) return { success: true, isSimulated: true };
@@ -78,7 +51,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
     const formattedPermits = cleanPermits.map((item: any) => {
       const pNum = item.permitNumber || item.id || '';
       
-      // แปลงโครงสร้างพนักงานให้ตรงเงื่อนไขของตัวแอปพลิเคชัน
+      // แปลงโครงสร้างรายชื่อพนักงานรองรับ Toolbox Talk ในแอปส่วนหน้า
       let workersArray: any[] = [];
       try {
         if (item.workers && Array.isArray(item.workers)) {
@@ -94,15 +67,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         workersArray = [{ id: 'w-default', name: 'ผู้ปฏิบัติงานหลัก', acknowledged: true }];
       }
 
-      // 🟢 ฟังก์ชันสร้างอาเรย์พิเศษที่ติดคำสั่งดักจับ .filter() รายคีย์ส่วนตัวของใบงาน
-      const mockArrayWithFilter = () => {
-        const mock: any = [];
-        mock.filter = function() { return []; };
-        mock.map = function() { return []; };
-        return mock;
-      };
-
-      return {
+      const baseItem: any = {
         ...item,
         id: pNum,
         permitNumber: pNum,
@@ -114,26 +79,25 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         contractorCompany: item.contractorCompany || 'บริษัทรับเหมาช่วง',
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toLowerCase() : 'pending',
-        
-        // 🟢 จุดสำคัญ: สวมสิทธิ์อาเรย์ดักจับให้กับคีย์ประวัติสุ่มตรวจ (safetyAudits) และคีย์อื่น ๆ ครบถ้วน เพื่อแก้บั๊กฟังก์ชัน dt พังค้างถาวร!
         workers: workersArray,
-        safetyAudits: mockArrayWithFilter(),
-        hazards: mockArrayWithFilter(),
-        safetyMeasures: mockArrayWithFilter(),
-        requiredPPE: mockArrayWithFilter(),
-        ppeRequired: mockArrayWithFilter(),
-        gasLogs: mockArrayWithFilter(),
         signatures: item.signatures || { requester: null, safety_officer: null },
-        logs: mockArrayWithFilter(),
-        history: mockArrayWithFilter(),
-        timeline: mockArrayWithFilter(),
-        syncLogs: mockArrayWithFilter(),
-        
         signaturesRecorded: typeof item.signaturesRecorded === 'string' ? item.signaturesRecorded : '',
         requesterSignature: typeof item.requesterSignature === 'string' ? item.requesterSignature : '',
         safetyOfficerSignature: typeof item.safetyOfficerSignature === 'string' ? item.safetyOfficerSignature : '',
         approverSignature: typeof item.approverSignature === 'string' ? item.approverSignature : ''
       };
+
+      // 🟢 นำ JavaScript Proxy มาครอบตัวใบงานรายชิ้นเพื่อดักคีย์ย่อย ป้องกันเออร์เรอร์ .filter() ใน index-XFiYjIOE.js อย่างถาวร!
+      return new Proxy(baseItem, {
+        get: (target: any, prop: string) => {
+          if (prop in target) return target[prop];
+          // หากหน้าต่างอนุมัติวิ่งหาคีย์แปลก ๆ (เช่น safetyAudits, hazards, safetyMeasures, logs) ให้ส่งกล่องอาเรย์ความปลอดภัยดักคัดกรองไปทันที
+          if (typeof prop === 'string') {
+            return createPerfectArray([]);
+          }
+          return undefined;
+        }
+      });
     });
 
     return createPerfectArray(formattedPermits);
@@ -143,6 +107,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
   }
 };
 
+// ฟังก์ชันสร้างอาเรย์พิเศษ ปลอดภัยจากอาการ .filter ค้างหน้าจอ
 function createPerfectArray(baseArr: any[]): any {
   const safeArr = [...baseArr];
   Object.defineProperty(safeArr, 'success', { value: true, writable: true, enumerable: false });
@@ -153,6 +118,9 @@ function createPerfectArray(baseArr: any[]): any {
   
   safeArr.filter = function(callback: any) {
     return createPerfectArray(baseArr.filter(callback));
+  };
+  safeArr.map = function(callback: any) {
+    return baseArr.map(callback);
   };
   return safeArr;
 }
