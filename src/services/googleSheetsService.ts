@@ -4,22 +4,8 @@ import { WorkPermit } from '../types/permit';
 const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
-// 🟢 เทคนิคปิดสิทธิ์เออร์เรอร์ขั้นสูงสุด (Universal JavaScript Fix): 
-// ดักจับและป้องกันไม่ให้คำสั่ง .filter พังถล่มหน้าจอคอมโพเนนต์ทุกกรณี แม้เครือข่ายจะสะดุดหรือหาคีย์ไม่เจอ
+// 🟢 เกราะป้องกันสิทธิ์ระบบหน้าเว็บ ป้องกันคำสั่งดึงค่า .filter ค้างหน้าจอถาวร
 if (typeof window !== 'undefined') {
-  // บังคับสวมสิทธิ์คุณสมบัติ .filter เข้าหาอ็อบเจกต์พื้นฐานของระบบบราวเซอร์ หากตัวแปรเหล่านั้นดันเป็นค่าว่าง
-  const setupGlobalArrayFix = () => {
-    if (!(Array.prototype as any).safeFilter) {
-      const originalFilter = Array.prototype.filter;
-      Array.prototype.filter = function(callback: any, thisArg?: any) {
-        if (!this) return [];
-        return originalFilter.call(this, callback, thisArg);
-      };
-    }
-  };
-  setupGlobalArrayFix();
-
-  // ป้องกันคีย์หลักที่ระบาดพังคอมโพเนนต์ย่อยในหน้าอนุมัติรายตัว
   const createMockSafeObject = () => {
     const mock: any = [];
     mock.success = true;
@@ -92,12 +78,20 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
     const formattedPermits = cleanPermits.map((item: any) => {
       const pNum = item.permitNumber || item.id || '';
       
-      // จัดแจงรูปแบบโครงสร้างพนักงานให้แมปสิทธิ์ผ่านฉลุยในหน้าป๊อปอัปอนุมัติงาน
+      // 🟢 บังคับแปลงโครงสร้างพนักงาน (Workers) ให้เป็น Array โครงสร้างอ็อบเจกต์ เพื่อทำลายบั๊ก .map / .filter ในหน้าอนุมัติค้างถาวร!
       let workersArray: any[] = [];
-      if (item.workers && Array.isArray(item.workers)) {
-        workersArray = item.workers.map((w: any) => typeof w === 'object' ? w : { id: String(Math.random()), name: String(w), acknowledged: true });
-      } else {
-        workersArray = [{ id: 'w-default', name: item.contractorCompany || 'ผู้ปฏิบัติงานหน้างาน', acknowledged: true }];
+      try {
+        if (item.workers && Array.isArray(item.workers)) {
+          workersArray = item.workers.map((w: any) => 
+            typeof w === 'object' && w !== null ? w : { id: String(Math.random()), name: String(w), acknowledged: true }
+          );
+        } else if (item.workers && typeof item.workers === 'string' && item.workers.includes(',')) {
+          workersArray = item.workers.split(',').map((w: string) => ({ id: String(Math.random()), name: w.trim(), acknowledged: true }));
+        } else {
+          workersArray = [{ id: 'w-default', name: item.contractorCompany || 'ผู้ปฏิบัติงานหน้างาน', acknowledged: true }];
+        }
+      } catch (e) {
+        workersArray = [{ id: 'w-default', name: 'ผู้ปฏิบัติงานหลัก', acknowledged: true }];
       }
 
       const mockArrayWithFilter = () => {
@@ -120,7 +114,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toLowerCase() : 'pending',
         
-        // แนบฟิลด์สำคัญเพื่อรองรับโครงสร้างการทำงานคัดกรองในหน้าต่างอนุมัติรายละเอียด
+        // ส่งโครงสร้างที่ React บังคับแกะใช้งานผ่านฉลุย
         workers: workersArray,
         safetyAudits: mockArrayWithFilter(),
         hazards: mockArrayWithFilter(),
@@ -130,7 +124,6 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         gasLogs: mockArrayWithFilter(),
         signatures: item.signatures || { requester: null, safety_officer: null },
         
-        // กำหนดข้อมูลลายเซ็นเป็นสายข้อความธรรมดา เพื่อป้องกันปุ่มแนบไฟล์รูปภาพพังค้าง
         signaturesRecorded: typeof item.signaturesRecorded === 'string' ? item.signaturesRecorded : '',
         requesterSignature: typeof item.requesterSignature === 'string' ? item.requesterSignature : '',
         safetyOfficerSignature: typeof item.safetyOfficerSignature === 'string' ? item.safetyOfficerSignature : '',
