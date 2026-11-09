@@ -1,8 +1,8 @@
 import { WorkPermit } from '../types/permit';
 
 // ลิงก์ตรงเข้า Google Apps Script (Web App) ฝั่ง Google Sheets ของคุณที่ดึงข้อมูลได้ถูกต้อง
-const GOOGLE_WEBAPP_URL = "https://google.com";
-const SPREADSHEET_ID = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
+const GOOGLE_WEBAPP_URL = https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
+const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
   if (!GOOGLE_WEBAPP_URL) return { success: true, isSimulated: true };
