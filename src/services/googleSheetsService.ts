@@ -1,7 +1,7 @@
 import { WorkPermit } from '../types/permit';
 
-// ลิงก์ตรงเข้า Google Apps Script (Web App) ฝั่ง Google Sheets ของคุณที่ดึงข้อมูลได้ถูกต้อง
-const GOOGLE_WEBAPP_URL = https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
+// 🟢 แก้ไขใส่เครื่องหมายคำพูดเปิดตัวแปรสคริปต์ให้ครบถ้วนถูกต้องสมบูรณ์
+const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
 export const appendPermitToSheets = async (permit: any, action: string = 'create'): Promise<any> => {
@@ -87,11 +87,10 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         approverSignature: typeof item.approverSignature === 'string' ? item.approverSignature : ''
       };
 
-      // 🟢 นำ JavaScript Proxy มาครอบตัวใบงานรายชิ้นเพื่อดักคีย์ย่อย ป้องกันเออร์เรอร์ .filter() ใน index-XFiYjIOE.js อย่างถาวร!
+      // นำ JavaScript Proxy มาครอบตัวใบงานรายชิ้นเพื่อดักคีย์ย่อย ป้องกันเออร์เรอร์ .filter() ค้างหน้าจอถาวร!
       return new Proxy(baseItem, {
         get: (target: any, prop: string) => {
           if (prop in target) return target[prop];
-          // หากหน้าต่างอนุมัติวิ่งหาคีย์แปลก ๆ (เช่น safetyAudits, hazards, safetyMeasures, logs) ให้ส่งกล่องอาเรย์ความปลอดภัยดักคัดกรองไปทันที
           if (typeof prop === 'string') {
             return createPerfectArray([]);
           }
