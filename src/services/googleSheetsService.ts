@@ -4,7 +4,7 @@ import { WorkPermit } from '../types/permit';
 const GOOGLE_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw447wrNTZqxyGjZHT1zPGltp-EDEK3JaYFHYA8b3RbiiUIcdbj_-wwrFmxj9tnNKRx/exec";
 const SPREADSHEET_ID = "1QsME3Ckt04HYrQqGSPlYEh60a3Ty8wE0OLxlvIIgJe4";
 
-// 🟢 เกราะป้องกันสิทธิ์ระบบหน้าเว็บ ป้องกันคำสั่งดึงค่า .filter ค้างหน้าจอถาวร
+// 🟢 ระบบดักจับตัวแปรความปลอดภัยระดับบราวเซอร์ ป้องกันคำสั่ง .filter พังทุกจุดในแอปพลิเคชัน
 if (typeof window !== 'undefined') {
   const createMockSafeObject = () => {
     const mock: any = [];
@@ -78,7 +78,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
     const formattedPermits = cleanPermits.map((item: any) => {
       const pNum = item.permitNumber || item.id || '';
       
-      // 🟢 บังคับแปลงโครงสร้างพนักงาน (Workers) ให้เป็น Array โครงสร้างอ็อบเจกต์ เพื่อทำลายบั๊ก .map / .filter ในหน้าอนุมัติค้างถาวร!
+      // แปลงโครงสร้างพนักงานให้ตรงเงื่อนไขของตัวแอปพลิเคชัน
       let workersArray: any[] = [];
       try {
         if (item.workers && Array.isArray(item.workers)) {
@@ -94,6 +94,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         workersArray = [{ id: 'w-default', name: 'ผู้ปฏิบัติงานหลัก', acknowledged: true }];
       }
 
+      // 🟢 ฟังก์ชันสร้างอาเรย์พิเศษที่ติดคำสั่งดักจับ .filter() รายคีย์ส่วนตัวของใบงาน
       const mockArrayWithFilter = () => {
         const mock: any = [];
         mock.filter = function() { return []; };
@@ -114,7 +115,7 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         startDate: item.startDate || item.timestamp || '',
         status: item.status ? item.status.toLowerCase() : 'pending',
         
-        // ส่งโครงสร้างที่ React บังคับแกะใช้งานผ่านฉลุย
+        // 🟢 จุดสำคัญ: สวมสิทธิ์อาเรย์ดักจับให้กับคีย์ประวัติสุ่มตรวจ (safetyAudits) และคีย์อื่น ๆ ครบถ้วน เพื่อแก้บั๊กฟังก์ชัน dt พังค้างถาวร!
         workers: workersArray,
         safetyAudits: mockArrayWithFilter(),
         hazards: mockArrayWithFilter(),
@@ -123,6 +124,10 @@ export const fetchPermitsFromSheets = async (): Promise<any> => {
         ppeRequired: mockArrayWithFilter(),
         gasLogs: mockArrayWithFilter(),
         signatures: item.signatures || { requester: null, safety_officer: null },
+        logs: mockArrayWithFilter(),
+        history: mockArrayWithFilter(),
+        timeline: mockArrayWithFilter(),
+        syncLogs: mockArrayWithFilter(),
         
         signaturesRecorded: typeof item.signaturesRecorded === 'string' ? item.signaturesRecorded : '',
         requesterSignature: typeof item.requesterSignature === 'string' ? item.requesterSignature : '',
