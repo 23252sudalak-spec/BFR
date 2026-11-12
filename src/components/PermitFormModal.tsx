@@ -67,7 +67,7 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [facilityZone, setFacilityZone] = useState('');
-  const [contractorCompany, setContractorCompany] = useState(currentUser.company || 'Thai General Construction Co., Ltd.');
+  const [contractorCompany, setContractorCompany] = useState(currentUser.company || 'Banfert New Material (Thailand) Co.,Ltd.');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [startTime, setStartTime] = useState('08:30');
@@ -315,15 +315,15 @@ export const PermitFormModal: React.FC<PermitFormModalProps> = ({
                     className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 text-xs"
                   />
                   <datalist id="facility-zone-suggestions">
-                    <option value="อาคารผลิต 1 (Production Plant 1)" />
-                    <option value="อาคารผลิต 2 (Production Plant 2)" />
-                    <option value="Zone A: Chemical Tank Farm" />
-                    <option value="Zone B: Boiler & Utilities" />
-                    <option value="Zone C: Reactor Complex" />
-                    <option value="Zone D: Machinery Yard" />
-                    <option value="Zone E: Main Substation" />
-                    <option value="Zone W: Warehouse & Logistics" />
-                    <option value="Central Workshop" />
+                    <option value="อาคารสำนักงาน (Office)" />
+                    <option value="อาคารพักอาศัยพนักงาน/โรงอาหาร (Dormitory/Canteen)" />
+                    <option value="Factory A: Warehouse"/>
+                    <option value="Factory B: ZHIMEI" />
+                    <option value="Factory C: ATE" />
+                    <option value="Factory D: Warehouse UV" />
+                    <option value="Factory E: UV" />
+                    <option value="Factory F: PVC" />
+                    <option value="Workshop" />
                     <option value="Wastewater Treatment" />
                   </datalist>
                 </div>
